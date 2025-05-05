@@ -21,10 +21,11 @@ const Sitebar = () => {
           </Link>
         </li>
         <li className="nav-item">
-          <Link to="/assign-delivery" className="sidebar-link">
-            <i className="bi bi-truck"></i> Assign Delivery
+          <Link to="/cart" className="sidebar-link">
+            <i className="bi bi-truck"></i> Cart
           </Link>
         </li>
+        
         <li className="nav-item">
           <Link to="/orders" className="sidebar-link">
             <i className="bi bi-card-checklist"></i> Orders
