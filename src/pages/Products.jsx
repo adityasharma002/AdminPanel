@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useLocation } from 'react-router-dom';
 import { Modal, Button, Form } from 'react-bootstrap';
-import { FaTrash, FaEdit, FaPlus, FaMinus, FaShoppingCart } from 'react-icons/fa';
+import { FaTrash, FaEdit, FaPlus } from 'react-icons/fa';
+import useProductStore from '../store/productStore';
+import useCartStore from '../store/useCartStore';
 
 const Products = () => {
   const { categoryId } = useParams();
   const { state: categoryFromNav } = useLocation();
 
-  const [allProducts, setAllProducts] = useState({});
+  const { allProducts, updateCategoryProducts } = useProductStore();
   const [currentProducts, setCurrentProducts] = useState([]);
   const [category, setCategory] = useState(categoryFromNav || null);
 
@@ -17,7 +19,9 @@ const Products = () => {
   const [productImage, setProductImage] = useState(null);
   const [editId, setEditId] = useState(null);
 
-  const [cart, setCart] = useState({});
+  const addToCart = useCartStore((state) => state.addToCart);
+  const updateQuantity = useCartStore((state) => state.updateQuantity);
+  const cartItems = useCartStore((state) => state.cart);
 
   useEffect(() => {
     if (categoryId) {
@@ -48,7 +52,7 @@ const Products = () => {
       : [...currentProducts, newProduct];
 
     const key = categoryId || 'global';
-    setAllProducts({ ...allProducts, [key]: updatedList });
+    updateCategoryProducts(key, updatedList);
 
     setProductName('');
     setProductPrice('');
@@ -67,20 +71,15 @@ const Products = () => {
   const handleDelete = (id) => {
     const filtered = currentProducts.filter((p) => p.id !== id);
     const key = categoryId || 'global';
-    setAllProducts({ ...allProducts, [key]: filtered });
+    updateCategoryProducts(key, filtered);
   };
 
-  const updateCart = (id, action) => {
-    setCart((prevCart) => {
-      const qty = prevCart[id] || 0;
-      const newQty = action === 'inc' ? qty + 1 : qty - 1;
-      if (newQty <= 0) {
-        const updated = { ...prevCart };
-        delete updated[id];
-        return updated;
-      }
-      return { ...prevCart, [id]: newQty };
-    });
+  const updateCart = (product, action) => {
+    if (action === 'inc') {
+      addToCart(product);
+    } else {
+      updateQuantity(product.id, -1);
+    }
   };
 
   return (
@@ -91,14 +90,19 @@ const Products = () => {
 
       <div className="d-flex flex-wrap gap-4 justify-content-center">
         {currentProducts.map((prod) => {
-          const inCartQty = cart[prod.id] || 0;
+          const inCartQty = cartItems.find((i) => i.id === prod.id)?.quantity || 0;
 
           return (
             <div key={prod.id} className="card shadow position-relative" style={{ width: '200px' }}>
               <img
                 src={prod.image}
                 alt={prod.name}
-                style={{ height: '130px', objectFit: 'cover', borderTopLeftRadius: '0.5rem', borderTopRightRadius: '0.5rem' }}
+                style={{
+                  height: '130px',
+                  objectFit: 'cover',
+                  borderTopLeftRadius: '0.5rem',
+                  borderTopRightRadius: '0.5rem',
+                }}
                 className="card-img-top"
               />
               <div className="card-body text-center p-2">
@@ -110,17 +114,17 @@ const Products = () => {
                       size="sm"
                       variant="warning"
                       className="rounded-pill px-3"
-                      onClick={() => updateCart(prod.id, 'inc')}
+                      onClick={() => updateCart(prod, 'inc')}
                     >
                       Add
                     </Button>
                   ) : (
                     <div className="d-flex align-items-center justify-content-center gap-2 border rounded-pill py-1 px-2 bg-light">
-                      <Button size="sm" variant="link" onClick={() => updateCart(prod.id, 'dec')}>
+                      <Button size="sm" variant="link" onClick={() => updateCart(prod, 'dec')}>
                         <FaTrash />
                       </Button>
                       <span>{inCartQty}</span>
-                      <Button size="sm" variant="link" onClick={() => updateCart(prod.id, 'inc')}>
+                      <Button size="sm" variant="link" onClick={() => updateCart(prod, 'inc')}>
                         <FaPlus />
                       </Button>
                     </div>
@@ -140,7 +144,6 @@ const Products = () => {
           );
         })}
 
-        {/* Add Product Card */}
         <Button
           variant="light"
           className="d-flex align-items-center justify-content-center shadow"
@@ -157,7 +160,7 @@ const Products = () => {
         </Button>
       </div>
 
-      {/* Add/Edit Modal */}
+      {/* Modal */}
       <Modal show={showModal} onHide={() => setShowModal(false)}>
         <Modal.Header closeButton>
           <Modal.Title>{editId ? 'Edit Product' : 'Add Product'}</Modal.Title>
@@ -166,7 +169,6 @@ const Products = () => {
           <Form.Group className="mb-3">
             <Form.Label>Product Name</Form.Label>
             <Form.Control
-              placeholder="Enter product name"
               value={productName}
               onChange={(e) => setProductName(e.target.value)}
             />
@@ -175,7 +177,6 @@ const Products = () => {
             <Form.Label>Product Price (₹)</Form.Label>
             <Form.Control
               type="number"
-              placeholder="Enter price"
               value={productPrice}
               onChange={(e) => setProductPrice(e.target.value)}
             />
@@ -191,9 +192,7 @@ const Products = () => {
         </Modal.Body>
         <Modal.Footer>
           <Button variant="secondary" onClick={() => setShowModal(false)}>Cancel</Button>
-          <Button onClick={handleAddOrEditProduct}>
-            {editId ? 'Update' : 'Add'}
-          </Button>
+          <Button onClick={handleAddOrEditProduct}>{editId ? 'Update' : 'Add'}</Button>
         </Modal.Footer>
       </Modal>
     </div>

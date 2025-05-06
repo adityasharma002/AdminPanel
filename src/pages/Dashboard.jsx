@@ -1,37 +1,18 @@
-import StatCardsGrid from "../components/StatCardsGrid";
-
-const recentOrders = [
-  {
-    id: "#ORD001",
-    product: "Milk 2L",
-    deliveryBoy: "Rahul",
-    status: "Delivered",
-    date: "2025-04-25",
-  },
-  {
-    id: "#ORD002",
-    product: "Tomatoes 5kg",
-    deliveryBoy: "Amit",
-    status: "Pending",
-    date: "2025-04-26",
-  },
-  {
-    id: "#ORD003",
-    product: "Paneer 1kg",
-    deliveryBoy: "Karan",
-    status: "Delivered",
-    date: "2025-04-27",
-  },
-];
+import React from 'react';
+import StatCardsGrid from '../components/StatCardsGrid';
+import useOrderStore from '../store/useOrderStore';
 
 const Dashboard = () => {
+  const getRecentOrders = useOrderStore((state) => state.getRecentOrders);
+  const recentOrders = getRecentOrders();
+
   return (
     <div className="p-6">
       {/* Stats Cards */}
       <StatCardsGrid />
 
       {/* Recent Orders Table */}
-      <div className="overflow-x-auto">
+      <div className="overflow-x-auto mt-8">
         <h3 className="text-lg font-semibold mb-4">Recent Orders</h3>
         <table className="table table-striped table-hover min-w-full table-auto">
           <thead>
@@ -47,20 +28,22 @@ const Dashboard = () => {
             {recentOrders.map((order) => (
               <tr key={order.id} className="border-b hover:bg-gray-50">
                 <td className="p-3">{order.id}</td>
-                <td className="p-3">{order.product}</td>
-                <td className="p-3">{order.deliveryBoy}</td>
+                <td className="p-3">{order.products.map((p) => p.name).join(', ')}</td>
+                <td className="p-3">{order.deliveryBoy || 'Unassigned'}</td>
                 <td className="p-3">
                   <span
                     className={`px-2 py-1 rounded-full text-xs font-medium ${
-                      order.status === "Delivered"
-                        ? "bg-green-100 text-green-800"
-                        : "bg-yellow-100 text-yellow-800"
+                      order.status === 'Delivered'
+                        ? 'bg-green-100 text-green-800'
+                        : order.status === 'Pending'
+                        ? 'bg-yellow-100 text-yellow-800'
+                        : 'bg-red-100 text-red-800'
                     }`}
                   >
                     {order.status}
                   </span>
                 </td>
-                <td className="p-3">{order.date}</td>
+                <td className="p-3">{order.orderDate}</td>
               </tr>
             ))}
           </tbody>

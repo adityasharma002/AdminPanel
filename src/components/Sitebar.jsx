@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom';
+import { NavLink } from 'react-router-dom';
 
 const Sitebar = () => {
   return (
@@ -6,35 +6,34 @@ const Sitebar = () => {
       <h2 className="sidebar-title">Admin Panel</h2>
       <ul className="nav flex-column">
         <li className="nav-item">
-          <Link to="/" className="sidebar-link">
+          <NavLink to="/" end className={({ isActive }) => `sidebar-link${isActive ? ' active' : ''}`}>
             <i className="bi bi-house-door-fill"></i> Dashboard
-          </Link>
+          </NavLink>
         </li>
         <li className="nav-item">
-          <Link to="/categories" className="sidebar-link">
+          <NavLink to="/categories" className={({ isActive }) => `sidebar-link${isActive ? ' active' : ''}`}>
             <i className="bi bi-tags-fill"></i> Categories
-          </Link>
+          </NavLink>
         </li>
         <li className="nav-item">
-          <Link to="/products" className="sidebar-link">
+          <NavLink to="/products" className={({ isActive }) => `sidebar-link${isActive ? ' active' : ''}`}>
             <i className="bi bi-box-seam"></i> Products
-          </Link>
+          </NavLink>
         </li>
         <li className="nav-item">
-          <Link to="/cart" className="sidebar-link">
+          <NavLink to="/cart" className={({ isActive }) => `sidebar-link${isActive ? ' active' : ''}`}>
             <i className="bi bi-truck"></i> Cart
-          </Link>
+          </NavLink>
         </li>
-        
         <li className="nav-item">
-          <Link to="/orders" className="sidebar-link">
+          <NavLink to="/orders" className={({ isActive }) => `sidebar-link${isActive ? ' active' : ''}`}>
             <i className="bi bi-card-checklist"></i> Orders
-          </Link>
+          </NavLink>
         </li>
         <li className="nav-item">
-          <Link to="/invoices" className="sidebar-link">
+          <NavLink to="/invoices" className={({ isActive }) => `sidebar-link${isActive ? ' active' : ''}`}>
             <i className="bi bi-file-earmark-text-fill"></i> Invoices
-          </Link>
+          </NavLink>
         </li>
       </ul>
     </div>

@@ -1,34 +1,21 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Modal, Button, Form } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
 import { FaTrash, FaEdit } from 'react-icons/fa';
-
-const LOCAL_STORAGE_KEY = 'categories_data';
+import useCategoriesStore from '../store/categoriesStore';
 
 const Categories = () => {
-  const [categories, setCategories] = useState([]);
+  const { categories, addCategory, deleteCategory } = useCategoriesStore();
   const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [categoryName, setCategoryName] = useState('');
   const [categoryImage, setCategoryImage] = useState(null);
   const navigate = useNavigate();
 
-  // Load categories from localStorage on mount
-  useEffect(() => {
-    const stored = localStorage.getItem(LOCAL_STORAGE_KEY);
-    if (stored) setCategories(JSON.parse(stored));
-  }, []);
-
-  // Save categories to localStorage whenever they change
-  useEffect(() => {
-    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(categories));
-  }, [categories]);
-
-  // Convert image file to base64
   const convertToBase64 = (file) => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = () => resolve(reader.result);
-      reader.onerror = (error) => reject(error);
+      reader.onerror = reject;
       reader.readAsDataURL(file);
     });
   };
@@ -37,21 +24,16 @@ const Categories = () => {
     if (!categoryName || !categoryImage) return;
 
     const base64Image = await convertToBase64(categoryImage);
-
     const newCategory = {
       id: Date.now(),
       name: categoryName,
       image: base64Image,
     };
 
-    setCategories([...categories, newCategory]);
+    addCategory(newCategory);
     setCategoryName('');
     setCategoryImage(null);
     setShowCategoryModal(false);
-  };
-
-  const handleDeleteCategory = (id) => {
-    setCategories(categories.filter((c) => c.id !== id));
   };
 
   return (
@@ -87,7 +69,7 @@ const Categories = () => {
                   variant="light"
                   onClick={(e) => {
                     e.stopPropagation();
-                    handleDeleteCategory(cat.id);
+                    deleteCategory(cat.id);
                   }}
                 >
                   <FaTrash />
@@ -97,7 +79,6 @@ const Categories = () => {
           </div>
         ))}
 
-        {/* Add Category Button */}
         <Button
           variant="light"
           className="d-flex align-items-center justify-content-center shadow"

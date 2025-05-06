@@ -1,34 +1,44 @@
 import React from 'react';
+import useOrderStore from '../store/useOrderStore';
 import 'bootstrap-icons/font/bootstrap-icons.css'; // Ensure this is loaded
 
-const stats = [
-  {
-    title: 'Total Orders',
-    value: 120,
-    icon: 'bi-cart-fill',
-    bgColor: '#eef2ff',
-  },
-  {
-    title: 'Delivered Orders',
-    value: 80,
-    icon: 'bi-check-circle-fill',
-    bgColor: '#e6ffed',
-  },
-  {
-    title: 'Pending Deliveries',
-    value: 40,
-    icon: 'bi-hourglass-split',
-    bgColor: '#fffbe6',
-  },
-  {
-    title: 'Revenue Generated',
-    value: '₹1,25,000',
-    icon: 'bi-currency-rupee',
-    bgColor: '#e6f7ff',
-  },
-];
-
 const StatCardsGrid = () => {
+  const orders = useOrderStore((state) => state.orders);
+
+  const totalOrders = orders.length;
+  const delivered = orders.filter((o) => o.status === 'Delivered').length;
+  const pending = orders.filter((o) => o.status === 'Pending').length;
+  const revenue = orders
+    .filter((o) => o.paymentStatus === 'Paid')
+    .reduce((sum, o) => sum + o.totalAmount, 0);
+
+  const stats = [
+    {
+      title: 'Total Orders',
+      value: totalOrders,
+      icon: 'bi-cart-fill',
+      bgColor: '#eef2ff',
+    },
+    {
+      title: 'Delivered Orders',
+      value: delivered,
+      icon: 'bi-check-circle-fill',
+      bgColor: '#e6ffed',
+    },
+    {
+      title: 'Pending Deliveries',
+      value: pending,
+      icon: 'bi-hourglass-split',
+      bgColor: '#fffbe6',
+    },
+    {
+      title: 'Revenue Generated',
+      value: `₹${revenue.toLocaleString()}`,
+      icon: 'bi-currency-rupee',
+      bgColor: '#e6f7ff',
+    },
+  ];
+
   return (
     <div className="container my-4">
       <h2 className="mb-4 fw-bold">Dashboard Overview</h2>
