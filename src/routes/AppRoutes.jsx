@@ -1,43 +1,59 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import Layout from '../components/Layout';
 import Login from '../pages/Login';
+import Register from '../pages/Register';
+import ProtectedRoute from '../components/ProtectedRoute';
 import Dashboard from '../pages/Dashboard';
 import Categories from '../pages/Categories';
-import Products from '../pages/Products'; // Used for both all products and category-specific
-import AssignDelivery from '../pages/AssignDelivery';
+import Customer from '../pages/Customer';
+import Products from '../pages/Products';
 import Orders from '../pages/Orders';
 import Invoices from '../pages/Invoices';
 import Cart from '../pages/Cart';
+import useAuthStore from '../store/authStore';
 
 const AppRoutes = () => {
-  const isLoggedIn = true; // Replace with actual auth logic
+  //const token = useAuthStore((state) => state.token);
+  const token = true;
 
   return (
     <Routes>
-      {!isLoggedIn ? (
-        <>
-          <Route path="/" element={<Login />} />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </>
-      ) : (
-        <>
-          {/* Layout Routes with sidebar */}
-          <Route path="/" element={<Layout />}>
-            <Route index element={<Dashboard />} />
-            <Route path="categories" element={<Categories />} />
-            <Route path="products" element={<Products />} /> {/* ✅ All Products */}
-            <Route path="assign-delivery" element={<AssignDelivery />} />
-            <Route path="cart" element={<Cart />} />
-            <Route path="orders" element={<Orders />} />
-            <Route path="invoices" element={<Invoices />} />
-          </Route>
+      {/* Public Routes */}
+      <Route path="/login" element={<Login />} />
+      <Route path="/register" element={<Register />} />
 
-          {/* Standalone route for selected category's products */}
-          <Route path="/products/:categoryId" element={<Products />} />
+      {/* Protected Routes */}
+        <Route
+          path="/"
+          element={
+            <ProtectedRoute>
+              <Layout />
+            </ProtectedRoute>
+          }
+        >
+        <Route index element={<Dashboard />} />
+        <Route path="categories" element={<Categories />} />
+        <Route path="products" element={<Products />} />
+        <Route path="customer" element={<Customer />} />
+        <Route path="cart" element={<Cart />} />
+        <Route path="orders" element={<Orders />} />
+        <Route path="invoice/:orderId" element={<Invoices />} />
+      </Route>
 
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </>
-      )}
+      {/* Dynamic product route (still protected) */}
+      <Route
+        path="/products/:categoryId"
+        element={
+          <ProtectedRoute>
+            <Products />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Catch all */}
+      <Route path="*" element={<Navigate to={token ? "/" : "/login"} replace />} />
+      
+
     </Routes>
   );
 };

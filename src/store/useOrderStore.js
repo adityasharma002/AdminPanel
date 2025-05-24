@@ -1,55 +1,45 @@
-import { create } from "zustand";
-import { persist } from "zustand/middleware";
+import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
+import axios from 'axios';
 
 const useOrderStore = create(
   persist(
     (set, get) => ({
-      orders: [
-        {
-          id: "#ORD001",
-          customerName: "Rahul Sharma",
-          address: "123 Main St",
-          deliveryDate: "2025-04-25",
-          totalAmount: 450,
-          paymentStatus: "Paid",
-          orderDate: "2025-04-24",
-          products: [{ name: "Milk 2L", quantity: 2 }],
-          deliveryBoy: "Rahul",
-          status: "Delivered",
-        },
-        {
-          id: "#ORD002",
-          customerName: "Priya Mehta",
-          address: "45 Park Ave",
-          deliveryDate: "2025-04-26",
-          totalAmount: 300,
-          paymentStatus: "COD",
-          orderDate: "2025-04-25",
-          products: [{ name: "Tomatoes 5kg", quantity: 1 }],
-          deliveryBoy: "Amit",
-          status: "Pending",
-        },
-        {
-          id: "#ORD003",
-          customerName: "Karan Verma",
-          address: "22 Link Rd",
-          deliveryDate: "2025-04-27",
-          totalAmount: 750,
-          paymentStatus: "Paid",
-          orderDate: "2025-04-26",
-          products: [
-            { name: "Onion 3kg", quantity: 1 },
-            { name: "Potato 2kg", quantity: 1 },
-          ],
-          deliveryBoy: "",
-          status: "Pending",
-        },
-      ],
-
-      filterStatus: "",
-      searchQuery: "",
-      sortKey: "",
+      orders: [],
+      filterStatus: '',
+      searchQuery: '',
+      sortKey: '',
       sortAsc: true,
+      loading: false,
+      error: null,
+
+      fetchOrders: async () => {
+        set({ loading: true, error: null });
+        try {
+          const response = await axios.get('https://logistic-project-backend.onrender.com/api/delivery/history');
+          const data = response.data?.data || [];
+
+          // Transform the API response to match internal order format
+          const transformed = data.map((item, index) => ({
+            id: `#ORD${(item.assignmentId || index + 1).toString().padStart(3, '0')}`,
+            customerName: item.customer,
+            address: item.address,
+            deliveryDate: item.deliveryDate,
+            totalAmount: 0, // Not provided by API
+            paymentStatus: '-', // Not provided by API
+            orderDate: item.deliveryDate, // Assuming same as delivery
+            products: parseProducts(item.products, item.quantities),
+            deliveryBoy: item.deliveryBoyName,
+            status: item.status,
+          }));
+
+          set({ orders: transformed });
+        } catch (err) {
+          set({ error: err.message || 'Failed to fetch orders' });
+        } finally {
+          set({ loading: false });
+        }
+      },
 
       setFilterStatus: (status) => set({ filterStatus: status }),
       setSearchQuery: (query) => set({ searchQuery: query }),
@@ -61,6 +51,7 @@ const useOrderStore = create(
           sortAsc: sortKey === key ? !sortAsc : true,
         });
       },
+
       getRecentOrders: () => {
         const state = get();
         const sorted = [...state.orders].sort(
@@ -68,20 +59,6 @@ const useOrderStore = create(
         );
         return sorted.slice(0, 5);
       },
-      
-      updateStatus: (orderId, newStatus) =>
-        set((state) => ({
-          orders: state.orders.map((o) =>
-            o.id === orderId ? { ...o, status: newStatus } : o
-          ),
-        })),
-
-      assignDeliveryBoy: (orderId, agentName) =>
-        set((state) => ({
-          orders: state.orders.map((o) =>
-            o.id === orderId ? { ...o, deliveryBoy: agentName } : o
-          ),
-        })),
 
       getFilteredSortedOrders: (state) => {
         let orders = [...state.orders];
@@ -105,13 +82,13 @@ const useOrderStore = create(
             const aValue = a[state.sortKey];
             const bValue = b[state.sortKey];
 
-            if (typeof aValue === "string" && typeof bValue === "string") {
+            if (typeof aValue === 'string' && typeof bValue === 'string') {
               return state.sortAsc
                 ? aValue.localeCompare(bValue)
                 : bValue.localeCompare(aValue);
             } else if (
-              typeof aValue === "number" &&
-              typeof bValue === "number"
+              typeof aValue === 'number' &&
+              typeof bValue === 'number'
             ) {
               return state.sortAsc ? aValue - bValue : bValue - aValue;
             } else {
@@ -120,15 +97,25 @@ const useOrderStore = create(
           });
         }
 
-        
-
         return orders;
       },
     }),
     {
-      name: "order-store", // localStorage key
+      name: 'order-store',
     }
   )
 );
+
+// Helper function to convert products string to object array
+function parseProducts(productsStr, quantitiesStr) {
+  const productParts = productsStr?.split(',') || [];
+  const quantityParts = quantitiesStr?.split(',') || [];
+
+  return productParts.map((product, index) => {
+    const name = product.trim().replace(/\s\d+$/, '');
+    const quantity = Number(quantityParts[index] || 1);
+    return { name, quantity };
+  });
+}
 
 export default useOrderStore;

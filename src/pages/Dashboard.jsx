@@ -1,4 +1,8 @@
 import React from 'react';
+import {
+  Table, TableBody, TableCell, TableContainer,
+  TableHead, TableRow, Paper, Typography, Box
+} from '@mui/material';
 import StatCardsGrid from '../components/StatCardsGrid';
 import useOrderStore from '../store/useOrderStore';
 
@@ -7,49 +11,84 @@ const Dashboard = () => {
   const recentOrders = getRecentOrders();
 
   return (
-    <div className="p-6">
-      {/* Stats Cards */}
+    <Box p={{ xs: 2, sm: 4 }}>
+      {/* Stat Cards */}
       <StatCardsGrid />
 
-      {/* Recent Orders Table */}
-      <div className="overflow-x-auto mt-8">
-        <h3 className="text-lg font-semibold mb-4">Recent Orders</h3>
-        <table className="table table-striped table-hover min-w-full table-auto">
-          <thead>
-            <tr className="bg-gray-100 text-gray-600 text-left text-sm">
-              <th className="p-3">Order ID</th>
-              <th className="p-3">Product</th>
-              <th className="p-3">Delivery Boy</th>
-              <th className="p-3">Status</th>
-              <th className="p-3">Date</th>
-            </tr>
-          </thead>
-          <tbody>
-            {recentOrders.map((order) => (
-              <tr key={order.id} className="border-b hover:bg-gray-50">
-                <td className="p-3">{order.id}</td>
-                <td className="p-3">{order.products.map((p) => p.name).join(', ')}</td>
-                <td className="p-3">{order.deliveryBoy || 'Unassigned'}</td>
-                <td className="p-3">
-                  <span
-                    className={`px-2 py-1 rounded-full text-xs font-medium ${
-                      order.status === 'Delivered'
-                        ? 'bg-green-100 text-green-800'
-                        : order.status === 'Pending'
-                        ? 'bg-yellow-100 text-yellow-800'
-                        : 'bg-red-100 text-red-800'
-                    }`}
-                  >
-                    {order.status}
-                  </span>
-                </td>
-                <td className="p-3">{order.orderDate}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
+      {/* Recent Orders */}
+      <Box mt={6}>
+        <Typography
+          variant="h6"
+          sx={{
+            fontWeight: 600,
+            fontSize: { xs: '1.2rem', sm: '1.5rem' },
+            color: '#1f2937',
+            borderBottom: '2px solid #f1f5f9',
+            pb: 1,
+            mb: 2,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 1,
+          }}
+        >
+          <i className="bi bi-receipt-cutoff text-secondary" />
+          Recent Orders
+        </Typography>
+
+        {/* Responsive Table */}
+        <Box sx={{ overflowX: 'auto' }}>
+          <TableContainer component={Paper} elevation={3}>
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableCell><strong>Order ID</strong></TableCell>
+                  <TableCell><strong>Product</strong></TableCell>
+                  <TableCell><strong>Delivery Boy</strong></TableCell>
+                  <TableCell><strong>Status</strong></TableCell>
+                  <TableCell><strong>Date</strong></TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {recentOrders.map((order) => (
+                  <TableRow key={order.id} hover>
+                    <TableCell>{order.id}</TableCell>
+                    <TableCell>{order.products.map(p => p.name).join(', ')}</TableCell>
+                    <TableCell>{order.deliveryBoy || 'Unassigned'}</TableCell>
+                    <TableCell>
+                      <Box
+                        sx={{
+                          display: 'inline-block',
+                          px: 1.5,
+                          py: 0.5,
+                          borderRadius: '12px',
+                          fontSize: '0.75rem',
+                          fontWeight: 500,
+                          backgroundColor:
+                            order.status === 'Delivered'
+                              ? '#d1fae5'
+                              : order.status === 'Pending'
+                              ? '#fef3c7'
+                              : '#fee2e2',
+                          color:
+                            order.status === 'Delivered'
+                              ? '#065f46'
+                              : order.status === 'Pending'
+                              ? '#92400e'
+                              : '#991b1b',
+                        }}
+                      >
+                        {order.status}
+                      </Box>
+                    </TableCell>
+                    <TableCell>{order.orderDate}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </Box>
+      </Box>
+    </Box>
   );
 };
 

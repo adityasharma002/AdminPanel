@@ -5,14 +5,14 @@ const useDashboardStore = create((set) => ({
     {
       id: '#ORD001',
       product: 'Milk 2L',
-      deliveryBoy: 'Rahul',
+      deliveryBoy: 'Aditya',
       status: 'Delivered',
       date: '2025-04-25',
     },
     {
       id: '#ORD002',
       product: 'Tomatoes 5kg',
-      deliveryBoy: 'Amit',
+      deliveryBoy: 'Aditya',
       status: 'Pending',
       date: '2025-04-26',
     },

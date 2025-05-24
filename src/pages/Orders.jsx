@@ -1,14 +1,11 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Form, Table } from 'react-bootstrap';
+import { Link } from 'react-router-dom';
 import useOrderStore from '../store/useOrderStore';
-
-const deliveryAgents = ['Rahul', 'Amit', 'Karan', 'Priya'];
 
 const Orders = () => {
   const {
     orders,
-    updateStatus,
-    assignDeliveryBoy,
     filterStatus,
     setFilterStatus,
     searchQuery,
@@ -16,7 +13,12 @@ const Orders = () => {
     sortKey,
     sortAsc,
     setSort,
+    fetchOrders,
   } = useOrderStore();
+
+  useEffect(() => {
+    fetchOrders();
+  }, [fetchOrders]);
 
   const getFilteredSortedOrders = () => {
     let filtered = [...orders];
@@ -30,7 +32,7 @@ const Orders = () => {
       filtered = filtered.filter(
         (o) =>
           o.customerName.toLowerCase().includes(q) ||
-          o.deliveryBoy?.toLowerCase().includes(q) ||
+          (o.deliveryBoy?.toLowerCase().includes(q)) ||
           o.id.toLowerCase().includes(q)
       );
     }
@@ -40,11 +42,9 @@ const Orders = () => {
         const aValue = a[sortKey];
         const bValue = b[sortKey];
 
-        if (typeof aValue === "string") {
-          return sortAsc
-            ? aValue.localeCompare(bValue)
-            : bValue.localeCompare(aValue);
-        } else if (typeof aValue === "number") {
+        if (typeof aValue === 'string' && typeof bValue === 'string') {
+          return sortAsc ? aValue.localeCompare(bValue) : bValue.localeCompare(aValue);
+        } else if (typeof aValue === 'number' && typeof bValue === 'number') {
           return sortAsc ? aValue - bValue : bValue - aValue;
         }
         return 0;
@@ -119,33 +119,13 @@ const Orders = () => {
               <td>{o.orderDate}</td>
               <td>{o.products.map((p) => p.name).join(', ')}</td>
               <td>{o.products.map((p) => p.quantity).join(', ')}</td>
+              {/* Replace dropdown with static text */}
+              <td>{o.deliveryBoy || '-'}</td>
+              <td>{o.status}</td>
               <td>
-                <Form.Select
-                  size="sm"
-                  value={o.deliveryBoy || ''}
-                  onChange={(e) => assignDeliveryBoy(o.id, e.target.value)}
-                >
-                  <option value="">Assign</option>
-                  {deliveryAgents.map((agent) => (
-                    <option key={agent}>{agent}</option>
-                  ))}
-                </Form.Select>
-              </td>
-              <td>
-                <Form.Select
-                  size="sm"
-                  value={o.status}
-                  onChange={(e) => updateStatus(o.id, e.target.value)}
-                >
-                  <option>Pending</option>
-                  <option>Delivered</option>
-                  <option>Cancelled</option>
-                </Form.Select>
-              </td>
-              <td>
-                  <a href={`/invoice/${o.id}`} className="btn btn-sm btn-primary">
-                    View
-                  </a>
+                <Link to={`/invoice/${o.id.replace('#', '')}`} className="btn btn-sm btn-primary">
+                  View
+                </Link>
               </td>
             </tr>
           ))}
