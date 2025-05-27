@@ -1,11 +1,11 @@
-// Products.js
-
 import React, { useEffect, useState } from 'react';
 import { useLocation, useParams } from 'react-router-dom';
 import { Button, Modal, Form } from 'react-bootstrap';
 import axios from 'axios';
 import { FaEdit, FaTrash } from 'react-icons/fa';
-import { MdOutlineShoppingCart } from 'react-icons/md'; // modern cart icon
+import { MdOutlineShoppingCart } from 'react-icons/md';
+import useCartStore from '../store/useCartStore';
+import useAuthStore from '../store/authStore';
 
 const API_BASE = 'https://logistic-project-backend.onrender.com/api';
 
@@ -23,7 +23,6 @@ const Products = () => {
   const { categoryId } = useParams();
   const location = useLocation();
   const isAllProductsPage = !categoryId;
-
   const [products, setProducts] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [productName, setProductName] = useState('');
@@ -32,7 +31,40 @@ const Products = () => {
   const [editProductId, setEditProductId] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [quantities, setQuantities] = useState({});
+
+  // Cart store - Fixed: Use individual selectors
+  const cart = useCartStore((state) => state.cart);
+  const addToCart = useCartStore((state) => state.addToCart);
+  const updateQuantity = useCartStore((state) => state.updateQuantity);
+  const removeFromCart = useCartStore((state) => state.removeFromCart);
+
+  // Get cart quantity for a specific product
+  const getQuantity = (productId) => {
+    const item = cart.find((i) => i.productId === productId);
+    return item ? item.quantity : 0;
+  };
+
+  // Handle adding item to cart or increasing quantity
+  const handleCartClick = async (product) => {
+    const currentQty = getQuantity(product.productId);
+    if (currentQty === 0) {
+      await addToCart(product);
+    } else {
+      await updateQuantity(product.productId, 1);
+    }
+  };
+
+  // Handle quantity updates with proper error handling
+  const updateProductQuantity = async (productId, delta) => {
+    const currentQty = getQuantity(productId);
+    const newQty = currentQty + delta;
+
+    if (newQty <= 0) {
+      await removeFromCart(productId);
+    } else {
+      await updateQuantity(productId, delta);
+    }
+  };
 
   const fetchProducts = async () => {
     try {
@@ -53,6 +85,15 @@ const Products = () => {
     fetchProducts();
   }, [categoryId]);
 
+  const handleDelete = async (id) => {
+    try {
+      await axios.delete(`${API_BASE}/products/${id}`);
+      setProducts((prev) => prev.filter((p) => p.productId !== id));
+    } catch (err) {
+      console.error('Error deleting product:', err);
+    }
+  };
+
   const handleSave = async () => {
     if (!productName || !description || !price) return;
 
@@ -64,7 +105,6 @@ const Products = () => {
           price,
           categoryId: parseInt(categoryId)
         });
-
         setProducts(prev =>
           prev.map(p =>
             p.productId === editProductId
@@ -72,16 +112,17 @@ const Products = () => {
               : p
           )
         );
-      } else {
-        const res = await axios.post(`${API_BASE}/products`, {
-          productName,
-          description,
-          price,
-          categoryId: parseInt(categoryId)
-        });
+     } else {
+  await axios.post(`${API_BASE}/products`, {
+    productName,
+    description,
+    price,
+    categoryId: parseInt(categoryId)
+  });
 
-        setProducts(prev => [...prev, res.data]);
-      }
+  await fetchProducts(); // Instead of manually pushing the item
+}
+
 
       setShowModal(false);
       setProductName('');
@@ -94,29 +135,6 @@ const Products = () => {
     }
   };
 
-  const handleDelete = async (id) => {
-    try {
-      await axios.delete(`${API_BASE}/products/${id}`);
-      setProducts(products.filter(p => p.productId !== id));
-    } catch (err) {
-      console.error('Error deleting product:', err);
-    }
-  };
-
-  const toggleQuantity = (id) => {
-    setQuantities((prev) => ({
-      ...prev,
-      [id]: prev[id] ? null : 1,
-    }));
-  };
-
-  const updateQuantity = (id, delta) => {
-    setQuantities((prev) => ({
-      ...prev,
-      [id]: Math.max(1, (prev[id] || 1) + delta),
-    }));
-  };
-
   return (
     <div className="container py-5">
       <div className="row mb-4">
@@ -126,7 +144,6 @@ const Products = () => {
               ? 'Products'
               : `${location.state?.name || 'Category'} - Products`}
           </h2>
-
           {!isAllProductsPage && (
             <Button
               variant="primary"
@@ -165,6 +182,7 @@ const Products = () => {
 
       <div className="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-4">
         {products.map((product, index) => (
+          
           <div key={product.productId} className="col">
             <div
               className="card h-100 border-0"
@@ -177,8 +195,16 @@ const Products = () => {
                 boxShadow: '0 10px 30px rgba(0, 0, 0, 0.05)',
                 color: '#fff',
               }}
+               onMouseEnter={(e) => {
+                e.currentTarget.style.transform = 'translateY(-5px)';
+                e.currentTarget.style.boxShadow = '0 15px 35px rgba(0, 0, 0, 0.1)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.boxShadow = '0 10px 30px rgba(0, 0, 0, 0.05)';
+              }}
             >
-              <div className="card-body d-flex flex-column align-items-center justify-content-center p-4" style={{ minHeight: '180px' }}>
+              <div className="card-body d-flex flex-column align-items-center justify-content-center p-4" style={{ minHeight: '150px' }}>
                 <div
                   className="icon-wrapper mb-3 d-flex align-items-center justify-content-center"
                   style={{
@@ -200,9 +226,9 @@ const Products = () => {
               </div>
 
               <div className="card-footer bg-transparent d-flex justify-content-between align-items-center border-0 px-3 pb-3">
-                {/* Unique Cart Button */}
+                {/* Cart Icon */}
                 <div
-                  onClick={() => toggleQuantity(product.productId)}
+                  onClick={() => handleCartClick(product)}
                   style={{
                     cursor: 'pointer',
                     width: '40px',
@@ -220,7 +246,7 @@ const Products = () => {
                   <MdOutlineShoppingCart size={22} color="#fff" />
                 </div>
 
-                {/* Edit/Delete Buttons (only for category view) */}
+                {/* Edit/Delete Buttons */}
                 {!isAllProductsPage && (
                   <div className="d-flex">
                     <Button
@@ -267,13 +293,13 @@ const Products = () => {
                 )}
               </div>
 
-              {/* Quantity Selector */}
-              {quantities[product.productId] && (
+              {/* Quantity Selector if item is already in cart */}
+              {getQuantity(product.productId) > 0 && (
                 <div className="d-flex justify-content-center align-items-center pb-3">
                   <Button
                     variant="light"
                     size="sm"
-                    onClick={() => updateQuantity(product.productId, -1)}
+                    onClick={() => updateProductQuantity(product.productId, -1)}
                     style={{
                       fontWeight: 'bold',
                       fontSize: '1rem',
@@ -286,12 +312,12 @@ const Products = () => {
                     -
                   </Button>
                   <span style={{ fontWeight: 'bold', fontSize: '1rem' }}>
-                    {quantities[product.productId]}
+                    {getQuantity(product.productId)}
                   </span>
                   <Button
                     variant="light"
                     size="sm"
-                    onClick={() => updateQuantity(product.productId, 1)}
+                    onClick={() => updateProductQuantity(product.productId, 1)}
                     style={{
                       fontWeight: 'bold',
                       fontSize: '1rem',

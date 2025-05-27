@@ -1,6 +1,8 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import axios from 'axios';
+import useAuthStore from './authStore';
+
 
 const useOrderStore = create(
   persist(
@@ -13,33 +15,45 @@ const useOrderStore = create(
       loading: false,
       error: null,
 
-      fetchOrders: async () => {
-        set({ loading: true, error: null });
-        try {
-          const response = await axios.get('https://logistic-project-backend.onrender.com/api/delivery/history');
-          const data = response.data?.data || [];
+       fetchOrders: async () => {
+  const token = useAuthStore.getState().token;
+  set({ loading: true, error: null });
 
-          // Transform the API response to match internal order format
-          const transformed = data.map((item, index) => ({
-            id: `#ORD${(item.assignmentId || index + 1).toString().padStart(3, '0')}`,
-            customerName: item.customer,
-            address: item.address,
-            deliveryDate: item.deliveryDate,
-            totalAmount: 0, // Not provided by API
-            paymentStatus: '-', // Not provided by API
-            orderDate: item.deliveryDate, // Assuming same as delivery
-            products: parseProducts(item.products, item.quantities),
-            deliveryBoy: item.deliveryBoyName,
-            status: item.status,
-          }));
+  try {
+    const response = await axios.get(
+      'https://logistic-project-backend.onrender.com/api/delivery/all',
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
 
-          set({ orders: transformed });
-        } catch (err) {
-          set({ error: err.message || 'Failed to fetch orders' });
-        } finally {
-          set({ loading: false });
-        }
-      },
+    const data = response.data || [];
+
+    const transformed = data.map((item, index) => ({
+      id: `#ORD${(item.assignmentId || index + 1).toString().padStart(3, '0')}`,
+      customerName: item.customerName,
+      address: item.deliveryAddress,
+      deliveryDate: item.deliveryDate,
+      totalAmount: item.price || 0,
+      orderDate: item.orderDate || item.deliveryDate,
+      products: item.cartItems?.map(ci => ({
+        name: ci.productName,
+        quantity: ci.quantity,
+      })) || [],
+      deliveryBoy: item.deliveryBoyName || '-', // You can resolve name via deliveryBoyId if needed
+      status: item.status,
+    }));
+
+    set({ orders: transformed });
+  } catch (err) {
+    set({ error: err.message || 'Failed to fetch orders' });
+  } finally {
+    set({ loading: false });
+  }
+},
+
 
       setFilterStatus: (status) => set({ filterStatus: status }),
       setSearchQuery: (query) => set({ searchQuery: query }),

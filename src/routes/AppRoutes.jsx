@@ -34,6 +34,7 @@ const AppRoutes = () => {
         <Route index element={<Dashboard />} />
         <Route path="categories" element={<Categories />} />
         <Route path="products" element={<Products />} />
+        <Route path="products/:categoryId" element={<Products />} /> {/* wrapped in Layout */}
         <Route path="customer" element={<Customer />} />
         <Route path="cart" element={<Cart />} />
         <Route path="orders" element={<Orders />} />

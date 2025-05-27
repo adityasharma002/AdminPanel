@@ -2,6 +2,7 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import useAuthStore from '../store/authStore';
 import 'bootstrap-icons/font/bootstrap-icons.css';
 
+
 const Sitebar = ({ closeSidebar }) => {
   const logout = useAuthStore((state) => state.logout);
   const navigate = useNavigate();
@@ -40,7 +41,7 @@ const Sitebar = ({ closeSidebar }) => {
             <NavLink
               to={to}
               end={exact}
-              className={({ isActive }) => `sidebar-link nav-link d-flex align-items-center gap-2${isActive ? ' active fw-bold text-primary' : ''}`}
+              className={({ isActive }) => `sidebar-link${isActive ? ' active' : ''}`}
               onClick={closeSidebar}
             >
               <i className={`bi ${icon}`}></i> {label}

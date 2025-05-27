@@ -96,7 +96,7 @@ const Orders = () => {
               Delivery Date {sortKey === 'deliveryDate' && (sortAsc ? '↑' : '↓')}
             </th>
             <th>Total</th>
-            <th>Payment</th>
+            
             <th onClick={() => handleSort('orderDate')} style={{ cursor: 'pointer' }}>
               Order Date {sortKey === 'orderDate' && (sortAsc ? '↑' : '↓')}
             </th>
@@ -115,10 +115,10 @@ const Orders = () => {
               <td>{o.address}</td>
               <td>{o.deliveryDate}</td>
               <td>₹{o.totalAmount}</td>
-              <td>{o.paymentStatus}</td>
               <td>{o.orderDate}</td>
               <td>{o.products.map((p) => p.name).join(', ')}</td>
               <td>{o.products.map((p) => p.quantity).join(', ')}</td>
+
               {/* Replace dropdown with static text */}
               <td>{o.deliveryBoy || '-'}</td>
               <td>{o.status}</td>

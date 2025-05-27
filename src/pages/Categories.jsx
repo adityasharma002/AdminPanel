@@ -141,11 +141,7 @@ const Categories = () => {
             </Button>
           </div>
 
-          <div className="bg-light p-2 px-3 rounded-3 mb-4">
-            <p className="text-muted m-0">
-              <small>Manage your product categories to organize inventory efficiently</small>
-            </p>
-          </div>
+          
         </div>
       </div>
 
