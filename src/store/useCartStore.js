@@ -11,18 +11,16 @@ const useCartStore = create((set, get) => ({
 
   // Helper function to normalize cart items
   normalizeCartItem: (item) => ({
-  id: item.productId || item.id,
-  cartItemId: item.cartItemId,
-  productId: item.productId || item.id,
-  name: item.Product?.productName || item.productName || item.name || 'Unknown Product',
-  productName: item.Product?.productName || item.productName || item.name || 'Unknown Product',
-  price: Number(item.Product?.price) || Number(item.price) || 0,
-  quantity: Number(item.quantity) || 1,
-  image: item.image || null,
-  description: item.description || ''
-}),
-
-
+    id: item.productId || item.id,
+    cartItemId: item.cartItemId,
+    productId: item.productId || item.id,
+    name: item.Product?.productName || item.productName || item.name || 'Unknown Product',
+    productName: item.Product?.productName || item.productName || item.name || 'Unknown Product',
+    price: Number(item.Product?.price) || Number(item.price) || 0,
+    quantity: Number(item.quantity) || 1,
+    image: item.image || null,
+    description: item.description || ''
+  }),
 
   // 1. GET all cart items
   getCartItems: async () => {
@@ -67,62 +65,60 @@ const useCartStore = create((set, get) => ({
   },
 
   // 2. POST add to cart
-    addToCart: async (product) => {
-  const token = useAuthStore.getState().token;
-  if (!token) {
-    console.error('No token found for addToCart');
-    return;
-  }
+  addToCart: async (product) => {
+    const token = useAuthStore.getState().token;
+    if (!token) {
+      console.error('No token found for addToCart');
+      return;
+    }
 
-  set({ error: null });
+    set({ error: null });
 
-  try {
-    const response = await axios.post(
-      `${API_BASE}/add`,
-      {
-        productId: product.productId,
-        quantity: 1,
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      }
-    );
+    try {
+      const response = await axios.post(
+        `${API_BASE}/add`,
+        {
+          productId: product.productId,
+          quantity: 1,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
 
-    const newCartItemFromServer = response.data;
+      const newCartItemFromServer = response.data;
 
-    const currentCart = get().cart;
-    const existingItemIndex = currentCart.findIndex(
-      item => item.productId === product.productId
-    );
+      const currentCart = get().cart;
+      const existingItemIndex = currentCart.findIndex(
+        item => item.productId === product.productId
+      );
 
-    const normalizedItem = get().normalizeCartItem(newCartItemFromServer);
+      const normalizedItem = get().normalizeCartItem(newCartItemFromServer);
 
-    if (existingItemIndex >= 0) {
-      // Update existing item with correct cartItemId
-      const updatedCart = [...currentCart];
-      updatedCart[existingItemIndex] = {
-        ...updatedCart[existingItemIndex],
-        quantity: updatedCart[existingItemIndex].quantity + 1,
-        cartItemId: normalizedItem.cartItemId, // ✅ add this
-      };
-      set({ cart: updatedCart });
-    } else {
-      // Add new item from server response
-      set({ cart: [...currentCart, normalizedItem] });
-    }
+      if (existingItemIndex >= 0) {
+        // Update existing item with correct cartItemId
+        const updatedCart = [...currentCart];
+        updatedCart[existingItemIndex] = {
+          ...updatedCart[existingItemIndex],
+          quantity: updatedCart[existingItemIndex].quantity + 1,
+          cartItemId: normalizedItem.cartItemId,
+        };
+        set({ cart: updatedCart });
+      } else {
+        // Add new item from server response
+        set({ cart: [...currentCart, normalizedItem] });
+      }
 
-    console.log('Added to cart successfully:', product.productName);
-  } catch (error) {
-    console.error('Add to cart failed:', error.response?.data || error.message);
-    set({ error: error.message });
-  }
+      console.log('Added to cart successfully:', product.productName);
+    } catch (error) {
+      console.error('Add to cart failed:', error.response?.data || error.message);
+      set({ error: error.message });
+    }
 
-  await get().getCartItems(); // ⬅️ force a sync from backend
-
-},
-
+    await get().getCartItems();
+  },
 
   // 3. PUT/POST update cart item quantity
   updateQuantity: async (productId, change) => {
@@ -203,51 +199,50 @@ const useCartStore = create((set, get) => ({
   },
 
   // 4. DELETE remove cart item
-removeFromCart: async (productId) => {
-  const token = useAuthStore.getState().token;
-  if (!token) {
-    console.error('No token found for removeFromCart');
-    return;
-  }
+  removeFromCart: async (productId) => {
+    const token = useAuthStore.getState().token;
+    if (!token) {
+      console.error('No token found for removeFromCart');
+      return;
+    }
 
-  const currentCart = get().cart;
+    const currentCart = get().cart;
 
-  // ✅ Find the cart item to remove using productId
-  const itemToRemove = currentCart.find(item => item.productId === productId);
+    // Find the cart item to remove using productId
+    const itemToRemove = currentCart.find(item => item.productId === productId);
 
-  if (!itemToRemove || !itemToRemove.cartItemId) {
-    console.error('cartItemId not found for productId:', productId);
-    set({ error: 'Unable to remove item. Missing cartItemId.' });
-    return;
-  }
+    if (!itemToRemove || !itemToRemove.cartItemId) {
+      console.error('cartItemId not found for productId:', productId);
+      set({ error: 'Unable to remove item. Missing cartItemId.' });
+      return;
+    }
 
-  const cartItemId = itemToRemove.cartItemId;
+    const cartItemId = itemToRemove.cartItemId;
 
-  // ✅ Optimistically update local state
-  const updatedCart = currentCart.filter(item => item.productId !== productId);
-  set({ cart: updatedCart, error: null });
+    // Optimistically update local state
+    const updatedCart = currentCart.filter(item => item.productId !== productId);
+    set({ cart: updatedCart, error: null });
 
-  try {
-    await axios.delete(`${API_BASE}/remove/${cartItemId}`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
+    try {
+      await axios.delete(`${API_BASE}/remove/${cartItemId}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
-    console.log('Removed from cart successfully:', cartItemId);
-  } catch (error) {
-    console.error('Remove from cart failed:', error.response?.data || error.message);
+      console.log('Removed from cart successfully:', cartItemId);
+    } catch (error) {
+      console.error('Remove from cart failed:', error.response?.data || error.message);
 
-    // ❌ Revert on failure
-    set({ 
-      cart: currentCart,
-      error: 'Failed to remove item. Please try again.'
-    });
-  }
-},
+      // Revert on failure
+      set({ 
+        cart: currentCart,
+        error: 'Failed to remove item. Please try again.'
+      });
+    }
+  },
 
-
-  // 5. POST clear cart
+  // 5. Clear cart with multiple endpoint attempts
   clearCart: async () => {
     const token = useAuthStore.getState().token;
     if (!token) {
@@ -258,21 +253,67 @@ removeFromCart: async (productId) => {
     set({ error: null });
 
     try {
-      await axios.post(
-        `${API_BASE}/clear`,
-        {},
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+      // Try multiple possible endpoints for clearing cart
+      let success = false;
+      const endpoints = [
+        { method: 'post', url: `${API_BASE}/clear` },
+        { method: 'delete', url: `${API_BASE}/clear` },
+        { method: 'delete', url: `${API_BASE}` },
+        { method: 'post', url: `${API_BASE}/empty` }
+      ];
+
+      for (const endpoint of endpoints) {
+        try {
+          if (endpoint.method === 'post') {
+            await axios.post(endpoint.url, {}, {
+              headers: { Authorization: `Bearer ${token}` }
+            });
+          } else {
+            await axios.delete(endpoint.url, {
+              headers: { Authorization: `Bearer ${token}` }
+            });
+          }
+          
+          console.log(`Cart cleared successfully using ${endpoint.method.toUpperCase()} ${endpoint.url}`);
+          success = true;
+          break;
+        } catch (endpointError) {
+          console.warn(`Failed to clear cart with ${endpoint.method.toUpperCase()} ${endpoint.url}:`, endpointError.message);
+          continue;
         }
-      );
+      }
+
+      if (!success) {
+        // If all endpoints fail, try removing items individually
+        console.log('Attempting to clear cart by removing items individually...');
+        const currentCart = get().cart;
+        
+        for (const item of currentCart) {
+          if (item.cartItemId) {
+            try {
+              await axios.delete(`${API_BASE}/remove/${item.cartItemId}`, {
+                headers: { Authorization: `Bearer ${token}` }
+              });
+            } catch (removeError) {
+              console.warn(`Failed to remove item ${item.cartItemId}:`, removeError.message);
+            }
+          }
+        }
+        console.log('Attempted to clear cart by removing individual items');
+      }
+
+      // Clear local cart regardless of API success/failure
       set({ cart: [] });
-      console.log('Cart cleared successfully');
+      console.log('Cart cleared locally');
+      
     } catch (error) {
       console.error('Clear cart failed:', error.response?.data || error.message);
-      // Still clear local cart even if API fails
-      set({ cart: [], error: 'Cart cleared locally, but server sync failed' });
+      // Clear local cart even if API fails
+      set({ 
+        cart: [], 
+        error: null // Don't show error to user since cart is cleared locally
+      });
+      console.log('Cart cleared locally despite API failure');
     }
   },
 

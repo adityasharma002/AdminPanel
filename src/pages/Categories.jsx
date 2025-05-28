@@ -1,31 +1,156 @@
 import React, { useState, useEffect } from 'react';
-import { Modal, Button, Form } from 'react-bootstrap';
+import {
+  Box, Container, Typography, Button, Card, CardContent, CardActions,
+  Grid, Dialog, DialogTitle, DialogContent, DialogActions, TextField,
+  IconButton, Fab, Skeleton, Tooltip, Paper, Divider, Stack, Zoom,
+  Slide, useTheme, alpha
+} from '@mui/material';
+import {
+  Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon,
+  Category as CategoryIcon, Close as CloseIcon
+} from '@mui/icons-material';
+import { styled, keyframes } from '@mui/material/styles';
 import { useNavigate } from 'react-router-dom';
-import { FaTrash, FaEdit } from 'react-icons/fa';
 import axios from 'axios';
 
 const API_BASE = 'https://logistic-project-backend.onrender.com/api/categories';
 
 const gradientColors = [
-  'linear-gradient(135deg, #f6d365 0%, #fda085 100%)',
-  'linear-gradient(135deg, #a1c4fd 0%, #c2e9fb 100%)',
-  'linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%)',
-  'linear-gradient(135deg, #fccb90 0%, #d57eeb 100%)',
-  'linear-gradient(135deg, #e0c3fc 0%, #8ec5fc 100%)',
+  'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
   'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-  'linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%)',
+  'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+  'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
+  'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
+  'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)',
+  'linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%)',
+  'linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%)'
 ];
 
+const float = keyframes`
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+  100% { transform: translateY(0px); }
+`;
+
+const pulse = keyframes`
+  0% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+  100% { transform: scale(1); }
+`;
+
+const StyledCard = styled(Card)(({ theme, gradient }) => ({
+  width: '100%',
+  aspectRatio: '1/1',
+  borderRadius: '20px',
+  background: gradient,
+  color: 'white',
+  boxShadow: '0 10px 40px rgba(0,0,0,0.1)',
+  transition: 'all 0.4s ease',
+  position: 'relative',
+  overflow: 'hidden',
+  display: 'flex',
+  flexDirection: 'column',
+  justifyContent: 'space-between',
+  cursor: 'pointer',
+  [theme.breakpoints.down('sm')]: {
+    minHeight: '280px',
+    maxHeight: '280px',
+  },
+  [theme.breakpoints.up('sm')]: {
+    minHeight: '300px',
+    maxHeight: '300px',
+  },
+  '&::before': {
+    content: '""',
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    background: 'rgba(255,255,255,0.1)',
+    opacity: 0,
+    transition: 'opacity 0.3s ease',
+  },
+  '&:hover': {
+    transform: 'translateY(-12px) scale(1.02)',
+    boxShadow: '0 20px 60px rgba(0,0,0,0.2)',
+    '&::before': {
+      opacity: 1,
+    },
+  },
+}));
+
+const IconWrapper = styled(Box)(({ theme }) => ({
+  width: '80px',
+  height: '80px',
+  borderRadius: '50%',
+  background: 'rgba(255,255,255,0.2)',
+  backdropFilter: 'blur(10px)',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  fontSize: '1.8rem',
+  fontWeight: 'bold',
+  letterSpacing: '1px',
+  boxShadow: 'inset 0 0 20px rgba(255,255,255,0.3)',
+  border: '1px solid rgba(255,255,255,0.2)',
+  animation: `${float} 3s ease-in-out infinite`
+}));
+
+const ActionButton = styled(IconButton)(({ theme }) => ({
+  width: '40px',
+  height: '40px',
+  background: 'rgba(255,255,255,0.25)',
+  backdropFilter: 'blur(10px)',
+  border: '1px solid rgba(255,255,255,0.3)',
+  color: 'white',
+  transition: 'all 0.3s ease',
+  '&:hover': {
+    background: 'rgba(255,255,255,0.4)',
+    transform: 'scale(1.1)',
+    animation: `${pulse} 0.6s ease-in-out`
+  }
+}));
+
+const HeaderSection = styled(Box)(({ theme }) => ({
+  background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.secondary.main} 100%)`,
+  borderRadius: '24px',
+  padding: theme.spacing(4),
+  marginBottom: theme.spacing(4),
+  color: 'white',
+  position: 'relative',
+  overflow: 'hidden',
+  '&::before': {
+    content: '""',
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    background: 'url("data:image/svg+xml,%3Csvg width=\"60\" height=\"60\" viewBox=\"0 0 60 60\" xmlns=\"http://www.w3.org/2000/svg\"%3E%3Cg fill=\"none\" fill-rule=\"evenodd\"%3E%3Cg fill=\"%23ffffff\" fill-opacity=\"0.1\"%3E%3Ccircle cx=\"30\" cy=\"30\" r=\"4\"/%3E%3C/g%3E%3C/g%3E%3C/svg%3E\")',
+    opacity: 0.5,
+  }
+}));
+
+const StyledDialog = styled(Dialog)(({ theme }) => ({
+  '& .MuiDialog-paper': {
+    borderRadius: '20px',
+    backdropFilter: 'blur(20px)',
+    background: `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.95)} 0%, ${alpha(theme.palette.secondary.main, 0.95)} 100%)`,
+    border: `1px solid ${alpha(theme.palette.common.white, 0.2)}`,
+    boxShadow: '0 20px 60px rgba(0,0,0,0.3)'
+  }
+}));
+
 const Categories = () => {
+  const theme = useTheme();
+  const navigate = useNavigate();
   const [categories, setCategories] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [categoryName, setCategoryName] = useState('');
   const [isEditing, setIsEditing] = useState(false);
   const [editCategoryId, setEditCategoryId] = useState(null);
   const [loading, setLoading] = useState(true);
-
-  const navigate = useNavigate();
-  
 
   const getCategoryInitials = (category) => {
     return category.name?.substring(0, 2).toUpperCase() || '';
@@ -35,13 +160,10 @@ const Categories = () => {
     try {
       setLoading(true);
       const response = await axios.get(API_BASE);
-      const apiData = response.data;
-
-      const categoriesData = apiData.map(category => ({
+      const categoriesData = response.data.map(category => ({
         id: category.categoryId,
         name: category.categoryName
       }));
-
       setCategories(categoriesData);
     } catch (error) {
       console.error("Error fetching categories:", error);
@@ -56,13 +178,11 @@ const Categories = () => {
 
   const handleSaveCategory = async () => {
     if (!categoryName) return;
-
     try {
       if (isEditing) {
         await axios.put(`${API_BASE}/${editCategoryId}`, {
           categoryName: categoryName
         });
-
         setCategories(prev =>
           prev.map(cat =>
             cat.id === editCategoryId ? { ...cat, name: categoryName } : cat
@@ -72,23 +192,14 @@ const Categories = () => {
         const response = await axios.post(API_BASE, {
           categoryName: categoryName
         });
-
         const newCategory = response.data;
-        const newCategoryId = newCategory.categoryId;
-
-        if (newCategoryId !== undefined && newCategoryId !== null) {
-          const categoryToAdd = {
-            id: newCategoryId,
-            name: categoryName
-          };
-          setCategories(prev => [...prev, categoryToAdd]);
-        }
+        const categoryToAdd = {
+          id: newCategory.categoryId,
+          name: categoryName
+        };
+        setCategories(prev => [...prev, categoryToAdd]);
       }
-
-      setShowModal(false);
-      setCategoryName('');
-      setIsEditing(false);
-      setEditCategoryId(null);
+      handleModalClose();
     } catch (err) {
       console.error('Error saving category:', err);
       alert(`Error saving category: ${err.message || 'Unknown error'}`);
@@ -105,194 +216,240 @@ const Categories = () => {
     }
   };
 
-  return (
-    <div className="container py-5">
-      <div className="row mb-5">
-        <div className="col-12">
-          <div className="d-flex justify-content-between align-items-center mb-4">
-            <h2 className="fw-bold m-0" style={{ fontSize: '2rem' }}>Categories</h2>
+  const handleModalClose = () => {
+    setShowModal(false);
+    setCategoryName('');
+    setIsEditing(false);
+    setEditCategoryId(null);
+  };
 
-            <Button
-              variant="primary"
+  return (
+    <Container maxWidth="xl" sx={{ py: 4 }}>
+      {/* Header Section */}
+      <HeaderSection>
+        <Stack
+          direction={{ xs: 'column', sm: 'row' }}
+          justifyContent="space-between"
+          alignItems={{ xs: 'flex-start', sm: 'center' }}
+          spacing={2}
+        >
+          <Box sx={{ position: 'relative', zIndex: 1 }}>
+            <Stack direction="row" alignItems="center" spacing={2}>
+              <CategoryIcon sx={{ fontSize: 40 }} />
+              <Box>
+                <Typography variant="h3" fontWeight="bold" gutterBottom>
+                  Categories
+                </Typography>
+                <Typography variant="h6" sx={{ opacity: 0.9 }}>
+                  Manage your product categories
+                </Typography>
+              </Box>
+            </Stack>
+          </Box>
+          <Zoom in={true} timeout={1000}>
+            <Fab
+              color="secondary"
+              variant="extended"
               onClick={() => {
                 setIsEditing(false);
                 setCategoryName('');
                 setShowModal(true);
               }}
-              className="d-flex align-items-center"
-              style={{
-                borderRadius: '8px',
-                padding: '8px 16px',
-                boxShadow: '0 2px 5px rgba(0,0,0,0.1)',
-                background: 'linear-gradient(145deg, #4361ee, #3a56d4)',
-                border: 'none',
-                transition: 'all 0.2s ease',
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.transform = 'translateY(-2px)';
-                e.currentTarget.style.boxShadow = '0 4px 8px rgba(0,0,0,0.15)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.transform = 'translateY(0)';
-                e.currentTarget.style.boxShadow = '0 2px 5px rgba(0,0,0,0.1)';
+              sx={{
+                background: 'rgba(255,255,255,0.2)',
+                backdropFilter: 'blur(20px)',
+                border: '1px solid rgba(255,255,255,0.3)',
+                color: 'white',
+                '&:hover': {
+                  background: 'rgba(255,255,255,0.3)',
+                  transform: 'scale(1.05)',
+                },
               }}
             >
-              + Add Category
-            </Button>
-          </div>
+              <AddIcon sx={{ mr: 1 }} />
+              Add Category
+            </Fab>
+          </Zoom>
+        </Stack>
+      </HeaderSection>
 
-          
-        </div>
-      </div>
-
+      {/* Loading State */}
       {loading && (
-        <div className="text-center py-5">
-          <div className="spinner-border text-primary" role="status">
-            <span className="visually-hidden">Loading...</span>
-          </div>
-          <p className="mt-2">Loading categories...</p>
-        </div>
+        <Grid container spacing={3}>
+          {[...Array(8)].map((_, index) => (
+            <Grid item xs={12} sm={6} md={4} lg={3} key={index}>
+              <Card sx={{ borderRadius: '20px', height: 300 }}>
+                <Skeleton variant="rectangular" height={200} />
+                <CardContent>
+                  <Skeleton variant="text" height={30} />
+                  <Skeleton variant="text" height={20} width="60%" />
+                </CardContent>
+              </Card>
+            </Grid>
+          ))}
+        </Grid>
       )}
 
+      {/* Empty State */}
       {!loading && categories.length === 0 && (
-        <div className="text-center py-5">
-          <p>No categories found. Add a new category to get started.</p>
-        </div>
+        <Paper
+          elevation={3}
+          sx={{
+            p: 6,
+            textAlign: 'center',
+            borderRadius: '20px',
+            background: `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.1)} 0%, ${alpha(theme.palette.secondary.main, 0.1)} 100%)`,
+          }}
+        >
+          <CategoryIcon sx={{ fontSize: 80, color: 'primary.main', mb: 2 }} />
+          <Typography variant="h4" fontWeight="bold" color="primary" gutterBottom>
+            No Categories Found
+          </Typography>
+          <Typography variant="body1" color="text.secondary">
+            Start adding categories to organize your products.
+          </Typography>
+        </Paper>
       )}
 
-      <div className="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-4">
+      {/* Categories Grid */}
+      <Grid container spacing={4}>
         {categories.map((cat, index) => (
-          <div key={cat.id} className="col">
-            <div
-              className="card h-100 border-0"
-              onClick={() => navigate(`/products/${cat.id}`, { state: cat })}
-              style={{
-                cursor: 'pointer',
-                borderRadius: '16px',
-                overflow: 'hidden',
-                transition: 'all 0.3s ease',
-                background: gradientColors[index % gradientColors.length],
-                boxShadow: '0 10px 30px rgba(0, 0, 0, 0.05)',
-                color: '#fff'
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.transform = 'translateY(-5px)';
-                e.currentTarget.style.boxShadow = '0 15px 35px rgba(0, 0, 0, 0.1)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.transform = 'translateY(0)';
-                e.currentTarget.style.boxShadow = '0 10px 30px rgba(0, 0, 0, 0.05)';
-              }}
-            >
-              <div className="card-body d-flex flex-column align-items-center justify-content-center p-4" style={{ minHeight: '180px' }}>
-                <div
-                  className="icon-wrapper mb-4 d-flex align-items-center justify-content-center"
-                  style={{
-                    width: '80px',
-                    height: '80px',
-                    borderRadius: '50%',
-                    background: 'rgba(255, 255, 255, 0.2)',
-                    boxShadow: 'inset 5px 5px 10px rgba(255,255,255,0.5), inset -5px -5px 10px rgba(255,255,255,0.3)',
-                    color: '#fff',
-                    fontSize: '1.8rem',
-                    fontWeight: 'bold',
-                    letterSpacing: '1px',
-                    textShadow: '0 1px 2px rgba(0,0,0,0.1)',
-                  }}
-                >
-                  {getCategoryInitials(cat)}
-                </div>
-                <h4 className="card-title text-center fw-bold mb-1" style={{ color: '#fff' }}>
-                  {cat.name}
-                </h4>
-              </div>
-              <div className="card-footer bg-transparent d-flex justify-content-end border-0 pt-0 pb-3 px-3">
-                <Button
-                  size="sm"
-                  variant="light"
-                  className="me-2"
-                  style={{
-                    borderRadius: '8px',
-                    background: 'rgba(255,255,255,0.3)',
-                    color: '#fff',
-                    border: 'none',
-                  }}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setIsEditing(true);
-                    setEditCategoryId(cat.id);
-                    setCategoryName(cat.name || '');
-                    setShowModal(true);
-                  }}
-                >
-                  <FaEdit style={{ marginRight: '5px' }} /> Edit
-                </Button>
-                <Button
-                  size="sm"
-                  variant="danger"
-                  style={{
-                    borderRadius: '8px',
-                    background: 'rgba(255,0,0,0.3)',
-                    color: '#fff',
-                    border: 'none',
-                  }}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    if (window.confirm(`Are you sure you want to delete "${cat.name}"?`)) {
-                      handleDelete(cat.id);
-                    }
-                  }}
-                >
-                  <FaTrash style={{ marginRight: '5px' }} /> Delete
-                </Button>
-              </div>
-            </div>
-          </div>
+          <Grid item xs={12} sm={6} md={4} lg={3} key={cat.id}>
+            <Slide direction="up" in={!loading} timeout={300 + index * 100}>
+              <StyledCard 
+                gradient={gradientColors[index % gradientColors.length]}
+                onClick={() => navigate(`/products/${cat.id}`, { state: cat })}
+              >
+                <CardContent sx={{ textAlign: 'center', pt: 4, flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                  <IconWrapper sx={{ mx: 'auto', mb: 3 }}>
+                    {getCategoryInitials(cat)}
+                  </IconWrapper>
+                  <Typography variant="h5" fontWeight="bold" gutterBottom>
+                    {cat.name}
+                  </Typography>
+                </CardContent>
+                <CardActions sx={{ justifyContent: 'center', px: 3, pb: 3 }}>
+                  <Stack direction="row" spacing={2}>
+                    <Tooltip title="Edit Category" arrow>
+                      <ActionButton
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setIsEditing(true);
+                          setEditCategoryId(cat.id);
+                          setCategoryName(cat.name || '');
+                          setShowModal(true);
+                        }}
+                      >
+                        <EditIcon fontSize="small" />
+                      </ActionButton>
+                    </Tooltip>
+                    <Tooltip title="Delete Category" arrow>
+                      <ActionButton
+                        sx={{
+                          background: 'rgba(255,0,0,0.3)',
+                          '&:hover': { background: 'rgba(255,0,0,0.5)' }
+                        }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (window.confirm(`Delete "${cat.name}"?`)) {
+                            handleDelete(cat.id);
+                          }
+                        }}
+                      >
+                        <DeleteIcon fontSize="small" />
+                      </ActionButton>
+                    </Tooltip>
+                  </Stack>
+                </CardActions>
+              </StyledCard>
+            </Slide>
+          </Grid>
         ))}
-      </div>
+      </Grid>
 
-      {/* Modal */}
-      <Modal show={showModal} onHide={() => setShowModal(false)} centered>
-        <Modal.Header closeButton style={{ borderBottom: '1px solid #f0f0f0' }}>
-          <Modal.Title>{isEditing ? 'Edit Category' : 'Add New Category'}</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          <Form>
-            <Form.Group className="mb-3">
-              <Form.Label>Category Name</Form.Label>
-              <Form.Control
-                type="text"
-                placeholder="Enter category name"
-                value={categoryName}
-                onChange={(e) => setCategoryName(e.target.value)}
-                style={{
-                  borderRadius: '8px',
-                  padding: '12px 15px',
-                  border: '1px solid #e0e0e0',
-                }}
-              />
-            </Form.Group>
-          </Form>
-        </Modal.Body>
-        <Modal.Footer style={{ borderTop: '1px solid #f0f0f0' }}>
-          <Button variant="light" onClick={() => setShowModal(false)} style={{ borderRadius: '8px' }}>
+      {/* Add/Edit Category Modal */}
+      <StyledDialog
+        open={showModal}
+        onClose={handleModalClose}
+        maxWidth="sm"
+        fullWidth
+        TransitionComponent={Zoom}
+        transitionDuration={400}
+      >
+        <DialogTitle
+          sx={{
+            background: 'rgba(255,255,255,0.1)',
+            color: 'white',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+          }}
+        >
+          <Stack direction="row" alignItems="center" spacing={2}>
+            <CategoryIcon />
+            <Typography variant="h5" fontWeight="bold">
+              {isEditing ? 'Edit Category' : 'Add New Category'}
+            </Typography>
+          </Stack>
+          <IconButton onClick={handleModalClose} sx={{ color: 'white' }}>
+            <CloseIcon />
+          </IconButton>
+        </DialogTitle>
+        <Divider sx={{ background: 'rgba(255,255,255,0.2)' }} />
+        <DialogContent sx={{ pt: 3, color: 'white' }}>
+          <TextField
+            fullWidth
+            label="Category Name"
+            value={categoryName}
+            onChange={(e) => setCategoryName(e.target.value)}
+            variant="outlined"
+            sx={{
+              '& .MuiOutlinedInput-root': {
+                color: 'white',
+                '& fieldset': { borderColor: 'rgba(255,255,255,0.5)' },
+                '&:hover fieldset': { borderColor: 'rgba(255,255,255,0.8)' },
+              },
+              '& .MuiInputLabel-root': { color: 'rgba(255,255,255,0.8)' },
+            }}
+          />
+        </DialogContent>
+        <DialogActions sx={{ p: 3, gap: 2 }}>
+          <Button
+            onClick={handleModalClose}
+            variant="outlined"
+            sx={{
+              borderColor: 'rgba(255,255,255,0.5)',
+              color: 'white',
+              '&:hover': {
+                borderColor: 'white',
+                background: 'rgba(255,255,255,0.1)',
+              },
+            }}
+          >
             Cancel
           </Button>
           <Button
-            variant="primary"
             onClick={handleSaveCategory}
-            style={{
-              borderRadius: '8px',
-              padding: '8px 16px',
-              background: 'linear-gradient(145deg, #4361ee, #3a56d4)',
-              border: 'none',
+            variant="contained"
+            disabled={!categoryName}
+            sx={{
+              background: 'rgba(255,255,255,0.2)',
+              backdropFilter: 'blur(10px)',
+              border: '1px solid rgba(255,255,255,0.3)',
+              '&:hover': {
+                background: 'rgba(255,255,255,0.3)',
+              },
+              '&:disabled': {
+                background: 'rgba(255,255,255,0.1)',
+                color: 'rgba(255,255,255,0.5)',
+              },
             }}
           >
-            {isEditing ? 'Update' : 'Add'} Category
+            {isEditing ? 'Update Category' : 'Add Category'}
           </Button>
-        </Modal.Footer>
-      </Modal>
-    </div>
+        </DialogActions>
+      </StyledDialog>
+    </Container>
   );
 };
 

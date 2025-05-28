@@ -1,43 +1,66 @@
 import { create } from 'zustand';
 import axios from 'axios';
 
-const BASE_URL = 'https://logistic-project-backend.onrender.com';
+const API_BASE = 'https://logistic-project-backend.onrender.com/api';
 
-const useProductStore = create((set) => ({
+const useProductStore = create((set, get) => ({
   products: [],
   loading: false,
-  error: null,
 
-  fetchProducts: async (categoryId = null) => {
-    set({ loading: true });
+  fetchProducts: async (categoryId) => {
     try {
-      const url = categoryId ? `${BASE_URL}/api/products/category/${categoryId}` : `${BASE_URL}/api/products`;
-      const response = await axios.get(url);
-      set({ products: response.data, loading: false });
+      set({ loading: true });
+      const endpoint = categoryId
+        ? `${API_BASE}/products/category/${categoryId}`
+        : `${API_BASE}/products`;
+      const res = await axios.get(endpoint);
+      set({ products: res.data });
     } catch (error) {
-      set({ error: error.message, loading: false });
-    }
-  },
-
-  addProduct: async (product) => {
-    try {
-      const response = await axios.post(`${BASE_URL}/api/products`, product);
-      set((state) => ({
-        products: [...state.products, response.data],
-      }));
-    } catch (error) {
-      set({ error: error.message });
+      console.error('Error fetching products:', error);
+    } finally {
+      set({ loading: false });
     }
   },
 
   deleteProduct: async (id) => {
     try {
-      await axios.delete(`${BASE_URL}/api/products/${id}`);
+      await axios.delete(`${API_BASE}/products/${id}`);
       set((state) => ({
-        products: state.products.filter((product) => product.id !== id),
+        products: state.products.filter((p) => p.productId !== id),
       }));
-    } catch (error) {
-      set({ error: error.message });
+    } catch (err) {
+      console.error('Error deleting product:', err);
+    }
+  },
+
+  saveProduct: async ({ productName, description, price, categoryId, isEditing, editProductId }) => {
+    try {
+      if (isEditing) {
+        await axios.put(`${API_BASE}/products/${editProductId}`, {
+          productName,
+          description,
+          price,
+          categoryId: parseInt(categoryId),
+        });
+        set((state) => ({
+          products: state.products.map((p) =>
+            p.productId === editProductId
+              ? { ...p, productName, description, price }
+              : p
+          ),
+        }));
+      } else {
+        await axios.post(`${API_BASE}/products`, {
+          productName,
+          description,
+          price,
+          categoryId: parseInt(categoryId),
+        });
+        // Refresh product list after addition
+        await get().fetchProducts(categoryId);
+      }
+    } catch (err) {
+      console.error('Error saving product:', err);
     }
   },
 }));

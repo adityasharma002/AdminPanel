@@ -109,7 +109,7 @@ const Layout = () => {
             <MenuIcon />
           </IconButton>
           <Typography sx={{ alignItems: 'center' }} variant="h6" noWrap>
-            Logistic Appicaltion
+            Logistics Application
           </Typography>
         </Toolbar>
       </AppBar>
