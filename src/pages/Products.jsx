@@ -1,135 +1,144 @@
 import React, { useEffect, useState } from 'react';
 import { useLocation, useParams } from 'react-router-dom';
 import {
-  Box, Container, Typography, Button, Card, CardContent, CardActions, Grid,
+  Box, Container,Card, Typography, Button, CardContent, Grid,
   Dialog, DialogTitle, DialogContent, DialogActions, TextField, IconButton,
-  Chip, Fab, Skeleton, Tooltip, Badge, Paper, Divider, Stack, Zoom, Slide,
-  useTheme, alpha
+  Chip, Paper, Stack, useTheme, alpha, CircularProgress, InputAdornment
 } from '@mui/material';
 import {
   Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon, ShoppingCart as ShoppingCartIcon,
   Remove as RemoveIcon, Close as CloseIcon, Category as CategoryIcon, LocalOffer as PriceIcon,
-  Inventory as ProductIcon
+  Inventory as ProductIcon, Image as ImageIcon, Search as SearchIcon, Clear as ClearIcon
 } from '@mui/icons-material';
-import { styled, keyframes } from '@mui/material/styles';
+import { styled } from '@mui/material/styles';
 import useCartStore from '../store/useCartStore';
 import useProductStore from '../store/productStore';
+import CardDesign from '../components/CardDesign';
 
-const gradientColors = [
-  'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-  'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-  'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
-  'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
-  'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
-  'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)',
-  'linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%)',
-  'linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%)'
-];
+const PageContainer = styled(Container)(({ theme }) => ({
+  paddingTop: theme.spacing(3),
+  paddingBottom: theme.spacing(6),
+}));
 
-const float = keyframes`
-  0% { transform: translateY(0px); }
-  50% { transform: translateY(-10px); }
-  100% { transform: translateY(0px); }
-`;
-
-const pulse = keyframes`
-  0% { transform: scale(1); }
-  50% { transform: scale(1.1); }
-  100% { transform: scale(1); }
-`;
-
-const StyledCard = styled(Card)(({ theme, gradient }) => ({
-  width: '100%',
-  aspectRatio: '1/1', // Makes it square
-  borderRadius: '20px',
-  background: gradient,
-  color: 'white',
-  boxShadow: '0 10px 40px rgba(0,0,0,0.1)',
-  transition: 'all 0.4s ease',
-  position: 'relative',
-  overflow: 'hidden',
+const HeaderContainer = styled(Box)(({ theme }) => ({
   display: 'flex',
-  flexDirection: 'column',
   justifyContent: 'space-between',
-  // Responsive sizing
+  alignItems: 'center',
+  marginBottom: theme.spacing(4),
+  paddingBottom: theme.spacing(3),
+  borderBottom: `1px solid ${theme.palette.divider}`,
   [theme.breakpoints.down('sm')]: {
-    minHeight: '330px',
-    maxHeight: '330px',
+    flexDirection: 'column',
+    alignItems: 'flex-start',
+    gap: theme.spacing(2),
   },
-  [theme.breakpoints.up('sm')]: {
-    minHeight: '350px',
-    maxHeight: '350px',
+}));
+
+const SearchBar = styled(TextField)(({ theme }) => ({
+  maxWidth: '400px',
+  width: '100%',
+  '& .MuiOutlinedInput-root': {
+    borderRadius: '8px',
+    backgroundColor: theme.palette.grey[50],
+    borderColor: theme.palette.grey[200],
+    transition: 'all 0.3s ease',
+    '&:hover': {
+      backgroundColor: theme.palette.grey[100],
+      borderColor: theme.palette.grey[300],
+    },
+    '&.Mui-focused': {
+      backgroundColor: theme.palette.common.white,
+      borderColor: theme.palette.primary.main,
+      boxShadow: `0 0 0 2px ${alpha(theme.palette.primary.main, 0.2)}`,
+    },
   },
-  [theme.breakpoints.up('md')]: {
-    minHeight: '320px',
-    maxHeight: '320px',
+  '& .MuiOutlinedInput-input': {
+    padding: theme.spacing(1.5),
+    fontSize: '14px',
   },
-  [theme.breakpoints.up('lg')]: {
-    minHeight: '330px',
-    maxHeight: '330px',
-  },
-  '&::before': {
-    content: '""',
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    background: 'rgba(255,255,255,0.1)',
-    opacity: 0,
-    transition: 'opacity 0.3s ease',
-  },
-  '&:hover': {
-    transform: 'translateY(-12px) scale(1.02)',
-    boxShadow: '0 20px 60px rgba(0,0,0,0.2)',
-    '&::before': {
-      opacity: 1,
+  '& .MuiInputLabel-outlined': {
+    fontSize: '14px',
+    transform: 'translate(14px, 12px) scale(1)',
+    '&.MuiInputLabel-shrink': {
+      transform: 'translate(14px, -6px) scale(0.75)',
     },
   },
 }));
 
-const IconWrapper = styled(Box)(({ theme }) => ({
-  width: '80px', height: '80px', borderRadius: '50%', background: 'rgba(255,255,255,0.2)',
-  backdropFilter: 'blur(10px)', display: 'flex', alignItems: 'center', justifyContent: 'center',
-  fontSize: '1.8rem', fontWeight: 'bold', letterSpacing: '1px', boxShadow: 'inset 0 0 20px rgba(255,255,255,0.3)',
-  border: '1px solid rgba(255,255,255,0.2)', animation: `${float} 3s ease-in-out infinite`
-}));
-
 const CartButton = styled(IconButton)(({ theme }) => ({
-  width: '50px', height: '50px', background: 'rgba(255,255,255,0.25)',
-  backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.3)', color: 'white',
+  width: '36px',
+  height: '36px',
+  background: theme.palette.primary.main,
+  color: theme.palette.common.white,
   transition: 'all 0.3s ease',
   '&:hover': {
-    background: 'rgba(255,255,255,0.4)', transform: 'scale(1.1)',
-    animation: `${pulse} 0.6s ease-in-out`
-  }
+    background: theme.palette.primary.dark,
+    transform: 'scale(1.05)',
+  },
 }));
 
 const QuantityButton = styled(IconButton)(({ theme }) => ({
-  width: '40px', height: '40px', borderRadius: '50%', background: 'rgba(255,255,255,0.3)',
-  color: 'white', fontWeight: 'bold', border: '1px solid rgba(255,255,255,0.4)',
-  transition: 'all 0.2s ease',
-  '&:hover': { background: 'rgba(255,255,255,0.5)', transform: 'scale(1.1)' }
+  width: '28px',
+  height: '28px',
+  borderRadius: '50%',
+  background: theme.palette.grey[200],
+  color: theme.palette.text.primary,
+  transition: 'all 0.3s ease',
+  '&:hover': {
+    background: theme.palette.grey[300],
+    transform: 'scale(1.05)',
+  },
 }));
 
-const HeaderSection = styled(Box)(({ theme }) => ({
-  background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.secondary.main} 100%)`,
-  borderRadius: '24px', padding: theme.spacing(4), marginBottom: theme.spacing(4),
-  color: 'white', position: 'relative', overflow: 'hidden',
-  '&::before': {
-    content: '""', position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
-    background: 'url("data:image/svg+xml,%3Csvg width="60" height="60" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"%3E%3Cg fill="none" fill-rule="evenodd"%3E%3Cg fill="%23ffffff" fill-opacity="0.1"%3E%3Ccircle cx="30" cy="30" r="4"/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")',
-    opacity: 0.5,
+const ActionIconButton = styled(IconButton)(({ theme }) => ({
+  width: '32px',
+  height: '32px',
+  backgroundColor: theme.palette.grey[50],
+  border: `1px solid ${theme.palette.grey[200]}`,
+  '&:hover': {
+    backgroundColor: theme.palette.grey[100],
+  }
+}));
+
+const PrimaryButton = styled(Button)(({ theme }) => ({
+  borderRadius: '8px',
+  textTransform: 'none',
+  fontWeight: '500',
+  padding: theme.spacing(0.75, 2),
+  fontSize: '14px',
+  boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
+  '&:hover': {
+    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
   }
 }));
 
 const StyledDialog = styled(Dialog)(({ theme }) => ({
   '& .MuiDialog-paper': {
-    borderRadius: '20px', backdropFilter: 'blur(20px)',
-    background: `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.95)} 0%, ${alpha(theme.palette.secondary.main, 0.95)} 100%)`,
-    border: `1px solid ${alpha(theme.palette.common.white, 0.2)}`,
-    boxShadow: '0 20px 60px rgba(0,0,0,0.3)'
+    borderRadius: '16px',
+    boxShadow: '0 20px 40px rgba(0, 0, 0, 0.1)',
+    border: `1px solid ${theme.palette.grey[200]}`,
   }
+}));
+
+const EmptyStateContainer = styled(Paper)(({ theme }) => ({
+  padding: theme.spacing(6, 4),
+  textAlign: 'center',
+  borderRadius: '16px',
+  backgroundColor: theme.palette.grey[50],
+  border: `1px solid ${theme.palette.grey[200]}`,
+  boxShadow: 'none',
+}));
+
+const LoaderContainer = styled(Box)(({ theme }) => ({
+  display: 'flex',
+  justifyContent: 'center',
+  alignItems: 'center',
+  minHeight: '60vh',
+  opacity: 1,
+  transition: 'opacity 0.3s ease-in-out',
+  '&.fade-out': {
+    opacity: 0,
+  },
 }));
 
 const Products = () => {
@@ -142,10 +151,13 @@ const Products = () => {
   const [productName, setProductName] = useState('');
   const [description, setDescription] = useState('');
   const [price, setPrice] = useState('');
+  const [image, setImage] = useState(null);
   const [editProductId, setEditProductId] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [searchTerm, setSearchTerm] = useState(''); // State for search term
 
-  const { products, fetchProducts, deleteProduct, saveProduct, loading } = useProductStore();
+  const { products, fetchProducts, fetchProductById, deleteProduct, saveProduct, loading } = useProductStore();
   const cart = useCartStore((state) => state.cart);
   const addToCart = useCartStore((state) => state.addToCart);
   const updateQuantity = useCartStore((state) => state.updateQuantity);
@@ -153,7 +165,13 @@ const Products = () => {
 
   useEffect(() => {
     fetchProducts(categoryId);
+    setSearchTerm(''); // Reset search term when products change
   }, [categoryId, fetchProducts]);
+
+  // Filter products based on search term
+  const filteredProducts = products.filter((product) =>
+    product.productName.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   const getQuantity = (productId) => {
     const item = cart.find((i) => i.productId === productId);
@@ -175,20 +193,55 @@ const Products = () => {
 
   const handleDelete = async (id) => {
     if (window.confirm('Are you sure you want to delete this product?')) {
-      await deleteProduct(id);
+      try {
+        await deleteProduct(id);
+      } catch (err) {
+        alert('Failed to delete product. Please try again.');
+      }
+    }
+  };
+
+  const handleEdit = async (productId) => {
+    try {
+      const product = await fetchProductById(productId);
+      setIsEditing(true);
+      setEditProductId(productId);
+      setProductName(product.productName);
+      setDescription(product.description);
+      setPrice(product.price);
+      setImage(null);
+      setShowModal(true);
+    } catch (err) {
+      alert('Failed to fetch product details. Please try again.');
     }
   };
 
   const handleSave = async () => {
-    await saveProduct({
-      productName, description, price, categoryId, isEditing, editProductId
-    });
-    setShowModal(false);
-    setProductName('');
-    setDescription('');
-    setPrice('');
-    setEditProductId(null);
-    setIsEditing(false);
+    if (!productName.trim() || !description.trim() || !price) return;
+
+    try {
+      setUploading(true);
+      await saveProduct({
+        productName,
+        description,
+        price: parseFloat(price),
+        categoryId,
+        image,
+        isEditing,
+        editProductId,
+      });
+      setShowModal(false);
+      setProductName('');
+      setDescription('');
+      setPrice('');
+      setImage(null);
+      setEditProductId(null);
+      setIsEditing(false);
+    } catch (err) {
+      alert('Failed to save product. Please try again.');
+    } finally {
+      setUploading(false);
+    }
   };
 
   const handleModalClose = () => {
@@ -196,244 +249,267 @@ const Products = () => {
     setProductName('');
     setDescription('');
     setPrice('');
+    setImage(null);
     setEditProductId(null);
     setIsEditing(false);
+    setUploading(false);
+  };
+
+  const handleImageSelect = (event) => {
+    const file = event.target.files[0];
+    if (file) {
+      setImage(file);
+    }
   };
 
   return (
-    <Container maxWidth="xl" sx={{ py: 4 }}>
-      {/* Header Section */}
-      <HeaderSection>
-        <Stack 
-          direction={{ xs: 'column', sm: 'row' }} 
-          justifyContent="space-between" 
-          alignItems={{ xs: 'flex-start', sm: 'center' }}
-          spacing={2}
-        >
-          <Box sx={{ position: 'relative', zIndex: 1 }}>
-            <Stack direction="row" alignItems="center" spacing={2}>
-              <CategoryIcon sx={{ fontSize: 40 }} />
-              <Box>
-                <Typography variant="h3" fontWeight="bold" gutterBottom>
-                  {isAllProductsPage
-                    ? 'All Products'
-                    : `${location.state?.name || 'Category'}`}
-                </Typography>
-                <Typography variant="h6" sx={{ opacity: 0.9 }}>
-                  {isAllProductsPage 
-                    ? 'Discover our complete product collection'
-                    : 'Explore products in this category'
-                  }
-                </Typography>
-              </Box>
-            </Stack>
+    <PageContainer maxWidth="xl">
+      {/* Header */}
+      <HeaderContainer>
+        <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <Box>
+            <Typography
+              variant="h4"
+              fontWeight="600"
+              color="text.primary"
+              sx={{ mb: 0.5, fontSize: { xs: '1.75rem', sm: '2.125rem' } }}
+            >
+              {isAllProductsPage ? 'All Products' : `${location.state?.name || 'Category'}`}
+            </Typography>
+            <Typography
+              variant="body1"
+              color="text.secondary"
+              sx={{ fontSize: '15px' }}
+            >
+              {isAllProductsPage
+                ? 'Discover our complete product collection'
+                : 'Explore products in this category'}
+            </Typography>
           </Box>
+          <SearchBar
+            label="Search Products"
+            variant="outlined"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon sx={{ color: 'grey.500' }} />
+                </InputAdornment>
+              ),
+              endAdornment: searchTerm && (
+                <InputAdornment position="end">
+                  <IconButton onClick={() => setSearchTerm('')} edge="end">
+                    <ClearIcon sx={{ color: 'grey.500' }} />
+                  </IconButton>
+                </InputAdornment>
+              ),
+            }}
+          />
+        </Box>
+        {!isAllProductsPage && (
+          <PrimaryButton
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={() => {
+              setIsEditing(false);
+              setProductName('');
+              setDescription('');
+              setPrice('');
+              setImage(null);
+              setShowModal(true);
+            }}
+            sx={{ minWidth: '140px', flexShrink: 0 }}
+          >
+            Add Product
+          </PrimaryButton>
+        )}
+      </HeaderContainer>
 
-          {!isAllProductsPage && (
-            <Zoom in={true} timeout={1000}>
-              <Fab
-                color="secondary"
-                variant="extended"
-                onClick={() => {
-                  setIsEditing(false);
-                  setProductName('');
-                  setDescription('');
-                  setPrice('');
-                  setShowModal(true);
-                }}
-                sx={{
-                  background: 'rgba(255,255,255,0.2)',
-                  backdropFilter: 'blur(20px)',
-                  border: '1px solid rgba(255,255,255,0.3)',
-                  color: 'white',
-                  '&:hover': {
-                    background: 'rgba(255,255,255,0.3)',
-                    transform: 'scale(1.05)',
-                  },
-                }}
-              >
-                <AddIcon sx={{ mr: 1 }} />
-                Add New Product
-              </Fab>
-            </Zoom>
-          )}
-        </Stack>
-      </HeaderSection>
-
-      {/* Loading State */}
+      {/* Loader */}
       {loading && (
-        <Grid container spacing={3}>
-          {[...Array(8)].map((_, index) => (
-            <Grid item xs={12} sm={6} md={4} lg={3} key={index}>
-              <Card sx={{ borderRadius: '20px', height: 300 }}>
-                <Skeleton variant="rectangular" height={200} />
-                <CardContent>
-                  <Skeleton variant="text" height={30} />
-                  <Skeleton variant="text" height={20} width="60%" />
+        <LoaderContainer>
+          <CircularProgress size={60} thickness={4} />
+        </LoaderContainer>
+      )}
+
+      {/* Stats Bar */}
+      {!loading && filteredProducts.length > 0 && (
+        <Box sx={{ mb: 4 }}>
+          <Chip
+            icon={<ProductIcon />}
+            label={`${filteredProducts.length} ${filteredProducts.length === 1 ? 'Product' : 'Products'}`}
+            variant="outlined"
+            sx={{
+              borderColor: 'grey.300',
+              backgroundColor: 'grey.50',
+              '& .MuiChip-label': { fontWeight: '500' }
+            }}
+          />
+        </Box>
+      )}
+
+      {/* Empty State */}
+      {!loading && filteredProducts.length === 0 && (
+        <EmptyStateContainer>
+          <ProductIcon sx={{ fontSize: 48, color: 'grey.400', mb: 2 }} />
+          <Typography variant="h6" fontWeight="500" color="text.primary" gutterBottom>
+            {searchTerm ? 'No matching products found' : 'No products yet'}
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+            {searchTerm
+              ? 'Try a different search term'
+              : isAllProductsPage
+              ? 'Start adding products to see them here.'
+              : 'This category is empty. Add some products to get started!'}
+          </Typography>
+          {!isAllProductsPage && !searchTerm && (
+            <PrimaryButton
+              variant="contained"
+              startIcon={<AddIcon />}
+              onClick={() => {
+                setIsEditing(false);
+                setProductName('');
+                setDescription('');
+                setPrice('');
+                setImage(null);
+                setShowModal(true);
+              }}
+            >
+              Add Product
+            </PrimaryButton>
+          )}
+        </EmptyStateContainer>
+      )}
+
+      {/* Products Grid */}
+      {!loading && filteredProducts.length > 0 && (
+        <Grid container spacing={3} justifyContent="center">
+          {filteredProducts.map((product) => (
+            <Grid item key={product.productId}>
+              <CardDesign
+                imageUrl={product.imageUrl || 'https://via.placeholder.com/150'}
+                placeholderText="No Image"
+                actions={
+                  <>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Chip
+                        icon={<CartButton sx={{ background: 'transparent' }}><ShoppingCartIcon fontSize="small" sx={{ color: theme.palette.text.primary }} /></CartButton>}
+                        label={getQuantity(product.productId) === 0 ? 'Add to Cart' : getQuantity(product.productId)}
+                        onClick={() => handleCartClick(product)}
+                        sx={{
+                          borderColor: 'grey.300',
+                          backgroundColor: 'grey.50',
+                          '& .MuiChip-label': { fontWeight: '500' },
+                          '&:hover': { backgroundColor: 'grey.100', cursor: 'pointer' }
+                        }}
+                      />
+                      {getQuantity(product.productId) > 0 && (
+                        <Stack direction="row" alignItems="center" spacing={0.5}>
+                          <QuantityButton
+                            size="small"
+                            onClick={() => updateProductQuantity(product.productId, -1)}
+                          >
+                            <RemoveIcon fontSize="small" />
+                          </QuantityButton>
+                          <Typography 
+                            variant="body2" 
+                            fontWeight="medium"
+                            sx={{ 
+                              minWidth: '24px', 
+                              textAlign: 'center',
+                              background: theme.palette.grey[100],
+                              borderRadius: '6px',
+                              px: 1,
+                              py: 0.5,
+                            }}
+                          >
+                            {getQuantity(product.productId)}
+                          </Typography>
+                          <QuantityButton
+                            size="small"
+                            onClick={() => updateProductQuantity(product.productId, 1)}
+                          >
+                            <AddIcon fontSize="small" />
+                          </QuantityButton>
+                        </Stack>
+                      )}
+                    </Box>
+                    {!isAllProductsPage && (
+                      <Stack direction="row" spacing={1}>
+                        <ActionIconButton
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleEdit(product.productId);
+                          }}
+                        >
+                          <EditIcon sx={{ fontSize: '16px' }} />
+                        </ActionIconButton>
+                        <ActionIconButton
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDelete(product.productId);
+                          }}
+                          sx={{
+                            '&:hover': {
+                              backgroundColor: alpha(theme.palette.error.main, 0.1),
+                              borderColor: theme.palette.error.main,
+                              color: theme.palette.error.main,
+                            }
+                          }}
+                        >
+                          <DeleteIcon sx={{ fontSize: '16px' }} />
+                        </ActionIconButton>
+                      </Stack>
+                    )}
+                  </>
+                }
+              >
+                <CardContent sx={{ pt: 2, pb: 1 }}>
+                  <Typography
+                    variant="h6"
+                    fontWeight="600"
+                    gutterBottom
+                    sx={{
+                      fontSize: '16px',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap'
+                    }}
+                  >
+                    {product.productName}
+                  </Typography>
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    sx={{
+                      mb: 1,
+                      fontSize: '13px',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      display: '-webkit-box',
+                      WebkitLineClamp: 2,
+                      WebkitBoxOrient: 'vertical'
+                    }}
+                  >
+                    {product.description}
+                  </Typography>
+                  <Chip
+                    icon={<PriceIcon />}
+                    label={`₹ ${product.price}`}
+                    size="small"
+                    sx={{
+                      background: theme.palette.grey[100],
+                      color: theme.palette.text.primary,
+                      fontWeight: 'medium',
+                    }}
+                  />
                 </CardContent>
-              </Card>
+              </CardDesign>
             </Grid>
           ))}
         </Grid>
       )}
-
-      {/* Empty State */}
-      {!loading && products.length === 0 && (
-        <Paper
-          elevation={3}
-          sx={{
-            p: 6,
-            textAlign: 'center',
-            borderRadius: '20px',
-            background: `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.1)} 0%, ${alpha(theme.palette.secondary.main, 0.1)} 100%)`,
-          }}
-        >
-          <ProductIcon sx={{ fontSize: 80, color: 'primary.main', mb: 2 }} />
-          <Typography variant="h4" fontWeight="bold" color="primary" gutterBottom>
-            No Products Found
-          </Typography>
-          <Typography variant="body1" color="text.secondary">
-            {isAllProductsPage 
-              ? 'Start adding products to see them here.'
-              : 'This category is empty. Add some products to get started!'
-            }
-          </Typography>
-        </Paper>
-      )}
-
-      {/* Products Grid */}
-      <Grid container spacing={4}>
-        {products.map((product, index) => (
-          <Grid item xs={12} sm={6} md={4} lg={3} key={product.productId}>
-            <Slide direction="up" in={!loading} timeout={300 + index * 100}>
-              <StyledCard gradient={gradientColors[index % gradientColors.length]}>
-                <CardContent sx={{ textAlign: 'center', pt: 4 }}>
-                  <IconWrapper sx={{ mx: 'auto', mb: 3 }}>
-                    {product.productName.slice(0, 2).toUpperCase()}
-                  </IconWrapper>
-                  
-                  <Typography variant="h5" fontWeight="bold" gutterBottom>
-                    {product.productName}
-                  </Typography>
-                  
-                  <Typography variant="body2" sx={{ opacity: 0.9, mb: 2 }}>
-                    {product.description}
-                  </Typography>
-                  
-                  <Chip
-                    icon={<PriceIcon />}
-                    label={`₹ ${product.price}`}
-                    sx={{
-                      background: 'rgba(255,255,255,0.3)',
-                      color: 'white',
-                      fontWeight: 'bold',
-                      fontSize: '1rem',
-                      height: '32px',
-                    }}
-                  />
-                </CardContent>
-
-                <CardActions sx={{ justifyContent: 'space-between', px: 3, pb: 3 }}>
-                  {/* Cart Section */}
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <Badge
-                      badgeContent={getQuantity(product.productId)}
-                      color="error"
-                      invisible={getQuantity(product.productId) === 0}
-                    >
-                      <Tooltip title="Add to Cart" arrow>
-                        <CartButton onClick={() => handleCartClick(product)}>
-                          <ShoppingCartIcon />
-                        </CartButton>
-                      </Tooltip>
-                    </Badge>
-
-                    {/* Quantity Controls */}
-                    {getQuantity(product.productId) > 0 && (
-                      <Stack direction="row" alignItems="center" spacing={1}>
-                        <QuantityButton
-                          size="small"
-                          onClick={() => updateProductQuantity(product.productId, -1)}
-                        >
-                          <RemoveIcon fontSize="small" />
-                        </QuantityButton>
-                        
-                        <Typography 
-                          variant="h6" 
-                          fontWeight="bold"
-                          sx={{ 
-                            minWidth: '30px', 
-                            textAlign: 'center',
-                            background: 'rgba(255,255,255,0.3)',
-                            borderRadius: '8px',
-                            px: 1,
-                            py: 0.5
-                          }}
-                        >
-                          {getQuantity(product.productId)}
-                        </Typography>
-                        
-                        <QuantityButton
-                          size="small"
-                          onClick={() => updateProductQuantity(product.productId, 1)}
-                        >
-                          <AddIcon fontSize="small" />
-                        </QuantityButton>
-                      </Stack>
-                    )}
-                  </Box>
-
-                  {/* Edit/Delete Actions */}
-                  {!isAllProductsPage && (
-                    <Stack direction="row" spacing={1}>
-                      <Tooltip title="Edit Product" arrow>
-                        <IconButton
-                          size="small"
-                          sx={{ 
-                            background: 'rgba(255,255,255,0.3)',
-                            color: 'white',
-                            '&:hover': { background: 'rgba(255,255,255,0.5)' }
-                          }}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setIsEditing(true);
-                            setEditProductId(product.productId);
-                            setProductName(product.productName);
-                            setDescription(product.description);
-                            setPrice(product.price);
-                            setShowModal(true);
-                          }}
-                        >
-                          <EditIcon fontSize="small" />
-                        </IconButton>
-                      </Tooltip>
-                      
-                      <Tooltip title="Delete Product" arrow>
-                        <IconButton
-                          size="small"
-                          sx={{ 
-                            background: 'rgba(255,0,0,0.3)',
-                            color: 'white',
-                            '&:hover': { background: 'rgba(255,0,0,0.5)' }
-                          }}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            if (window.confirm(`Delete ${product.productName}?`)) {
-                              handleDelete(product.productId);
-                            }
-                          }}
-                        >
-                          <DeleteIcon fontSize="small" />
-                        </IconButton>
-                      </Tooltip>
-                    </Stack>
-                  )}
-                </CardActions>
-              </StyledCard>
-            </Slide>
-          </Grid>
-        ))}
-      </Grid>
 
       {/* Add/Edit Product Modal */}
       <StyledDialog
@@ -441,123 +517,127 @@ const Products = () => {
         onClose={handleModalClose}
         maxWidth="sm"
         fullWidth
-        TransitionComponent={Zoom}
-        transitionDuration={400}
       >
-        <DialogTitle
-          sx={{
-            background: 'rgba(255,255,255,0.1)',
-            color: 'white',
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-          }}
-        >
-          <Stack direction="row" alignItems="center" spacing={2}>
-            <ProductIcon />
-            <Typography variant="h5" fontWeight="bold">
+        <DialogTitle sx={{ pb: 1 }}>
+          <Stack direction="row" alignItems="center" justifyContent="space-between">
+            <Typography variant="h6" fontWeight="500">
               {isEditing ? 'Edit Product' : 'Add New Product'}
             </Typography>
+            <IconButton
+              onClick={handleModalClose}
+              size="small"
+              sx={{ color: 'grey.500' }}
+            >
+              <CloseIcon />
+            </IconButton>
           </Stack>
-          <IconButton onClick={handleModalClose} sx={{ color: 'white' }}>
-            <CloseIcon />
-          </IconButton>
         </DialogTitle>
-
-        <Divider sx={{ background: 'rgba(255,255,255,0.2)' }} />
-
-        <DialogContent sx={{ pt: 3, color: 'white' }}>
-          <Stack spacing={3}>
-            <TextField
-              fullWidth
-              label="Product Name"
-              value={productName}
-              onChange={(e) => setProductName(e.target.value)}
-              variant="outlined"
-              sx={{
-                '& .MuiOutlinedInput-root': {
-                  color: 'white',
-                  '& fieldset': { borderColor: 'rgba(255,255,255,0.5)' },
-                  '&:hover fieldset': { borderColor: 'rgba(255,255,255,0.8)' },
-                },
-                '& .MuiInputLabel-root': { color: 'rgba(255,255,255,0.8)' },
-              }}
-            />
-            
-            <TextField
-              fullWidth
-              multiline
-              rows={3}
-              label="Description"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              variant="outlined"
-              sx={{
-                '& .MuiOutlinedInput-root': {
-                  color: 'white',
-                  '& fieldset': { borderColor: 'rgba(255,255,255,0.5)' },
-                  '&:hover fieldset': { borderColor: 'rgba(255,255,255,0.8)' },
-                },
-                '& .MuiInputLabel-root': { color: 'rgba(255,255,255,0.8)' },
-              }}
-            />
-            
-            <TextField
-              fullWidth
-              type="number"
-              label="Price (₹)"
-              value={price}
-              onChange={(e) => setPrice(e.target.value)}
-              variant="outlined"
-              sx={{
-                '& .MuiOutlinedInput-root': {
-                  color: 'white',
-                  '& fieldset': { borderColor: 'rgba(255,255,255,0.5)' },
-                  '&:hover fieldset': { borderColor: 'rgba(255,255,255,0.8)' },
-                },
-                '& .MuiInputLabel-root': { color: 'rgba(255,255,255,0.8)' },
-              }}
-            />
-          </Stack>
+        
+        <DialogContent sx={{ pt: 2 }}>
+          <TextField
+            fullWidth
+            label="Product Name"
+            value={productName}
+            onChange={(e) => setProductName(e.target.value)}
+            variant="outlined"
+            size="medium"
+            sx={{
+              mb: 3,
+              '& .MuiOutlinedInput-root': {
+                borderRadius: '8px',
+              }
+            }}
+          />
+          <TextField
+            fullWidth
+            multiline
+            rows={3}
+            label="Description"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            variant="outlined"
+            size="medium"
+            sx={{
+              mb: 3,
+              '& .MuiOutlinedInput-root': {
+                borderRadius: '8px',
+              }
+            }}
+          />
+          <TextField
+            fullWidth
+            type="number"
+            label="Price (₹)"
+            value={price}
+            onChange={(e) => setPrice(e.target.value)}
+            variant="outlined"
+            size="medium"
+            sx={{
+              mb: 3,
+              '& .MuiOutlinedInput-root': {
+                borderRadius: '8px',
+              }
+            }}
+          />
+          <Typography variant="subtitle2" color="text.primary" sx={{ mb: 2 }}>
+            Product Image
+          </Typography>
+          <input
+            type="file"
+            accept="image/*"
+            onChange={handleImageSelect}
+            style={{ display: 'none' }}
+            id="image-upload"
+          />
+          <Box
+            onClick={() => document.getElementById('image-upload').click()}
+            sx={{
+              border: `2px dashed ${theme.palette.grey[300]}`,
+              borderRadius: '12px',
+              padding: theme.spacing(3),
+              textAlign: 'center',
+              backgroundColor: theme.palette.grey[50],
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+              '&:hover': {
+                borderColor: theme.palette.primary.main,
+                backgroundColor: alpha(theme.palette.primary.main, 0.05),
+              },
+            }}
+          >
+            <Typography variant="body1" color="text.primary" gutterBottom>
+              {image ? image.name : 'Click to upload'}
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              PNG, JPG, JPEG up to 10MB
+            </Typography>
+          </Box>
         </DialogContent>
 
-        <DialogActions sx={{ p: 3, gap: 2 }}>
+        <DialogActions sx={{ p: 3, pt: 2, gap: 1 }}>
           <Button
             onClick={handleModalClose}
             variant="outlined"
+            disabled={uploading}
             sx={{
-              borderColor: 'rgba(255,255,255,0.5)',
-              color: 'white',
-              '&:hover': {
-                borderColor: 'white',
-                background: 'rgba(255,255,255,0.1)',
-              },
+              textTransform: 'none',
+              borderRadius: '8px',
+              borderColor: 'grey.300',
+              color: 'text.primary',
             }}
           >
             Cancel
           </Button>
-          <Button
+          <PrimaryButton
             onClick={handleSave}
             variant="contained"
-            disabled={!productName || !description || !price}
-            sx={{
-              background: 'rgba(255,255,255,0.2)',
-              backdropFilter: 'blur(10px)',
-              border: '1px solid rgba(255,255,255,0.3)',
-              '&:hover': {
-                background: 'rgba(255,255,255,0.3)',
-              },
-              '&:disabled': {
-                background: 'rgba(255,255,255,0.1)',
-                color: 'rgba(255,255,255,0.5)',
-              },
-            }}
+            disabled={!productName || !description || !price || uploading}
           >
-            {isEditing ? 'Update Product' : 'Add Product'}
-          </Button>
+            {uploading ? 'Saving...' : (isEditing ? 'Update' : 'Add')}
+          </PrimaryButton>
         </DialogActions>
       </StyledDialog>
-    </Container>
+    </PageContainer>
   );
 };
 

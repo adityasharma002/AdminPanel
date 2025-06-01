@@ -1,160 +1,178 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Box, Container, Typography, Button, Card, CardContent, CardActions,
-  Grid, Dialog, DialogTitle, DialogContent, DialogActions, TextField,
-  IconButton, Fab, Skeleton, Tooltip, Paper, Divider, Stack, Zoom,
-  Slide, useTheme, alpha
+  Box, Container, Typography, Button, CardContent, Grid, Dialog,
+  DialogTitle, DialogContent, DialogActions, TextField, IconButton,
+  Paper, Stack, Chip, useTheme, alpha, CircularProgress, InputAdornment
 } from '@mui/material';
 import {
   Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon,
-  Category as CategoryIcon, Close as CloseIcon
+  Category as CategoryIcon, Close as CloseIcon,
+  Visibility as ViewIcon, Business as BusinessIcon,
+  CloudUpload as CloudUploadIcon, Image as ImageIcon,
+  Search as SearchIcon, Clear as ClearIcon
 } from '@mui/icons-material';
-import { styled, keyframes } from '@mui/material/styles';
+import { styled } from '@mui/material/styles';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import CardDesign from '../components/CardDesign'; // Adjust the import path as necessary
 
 const API_BASE = 'https://logistic-project-backend.onrender.com/api/categories';
 
-const gradientColors = [
-  'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-  'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-  'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
-  'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
-  'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
-  'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)',
-  'linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%)',
-  'linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%)'
-];
+const PageContainer = styled(Container)(({ theme }) => ({
+  paddingTop: theme.spacing(3),
+  paddingBottom: theme.spacing(6),
+}));
 
-const float = keyframes`
-  0% { transform: translateY(0px); }
-  50% { transform: translateY(-10px); }
-  100% { transform: translateY(0px); }
-`;
-
-const pulse = keyframes`
-  0% { transform: scale(1); }
-  50% { transform: scale(1.1); }
-  100% { transform: scale(1); }
-`;
-
-const StyledCard = styled(Card)(({ theme, gradient }) => ({
-  width: '100%',
-  aspectRatio: '1/1',
-  borderRadius: '20px',
-  background: gradient,
-  color: 'white',
-  boxShadow: '0 10px 40px rgba(0,0,0,0.1)',
-  transition: 'all 0.4s ease',
-  position: 'relative',
-  overflow: 'hidden',
+const HeaderContainer = styled(Box)(({ theme }) => ({
   display: 'flex',
-  flexDirection: 'column',
   justifyContent: 'space-between',
-  cursor: 'pointer',
+  alignItems: 'center',
+  marginBottom: theme.spacing(4),
+  paddingBottom: theme.spacing(3),
+  borderBottom: `1px solid ${theme.palette.divider}`,
   [theme.breakpoints.down('sm')]: {
-    minHeight: '280px',
-    maxHeight: '280px',
+    flexDirection: 'column',
+    alignItems: 'flex-start',
+    gap: theme.spacing(2),
   },
-  [theme.breakpoints.up('sm')]: {
-    minHeight: '300px',
-    maxHeight: '300px',
+}));
+
+const SearchBar = styled(TextField)(({ theme }) => ({
+  maxWidth: '400px',
+  width: '100%',
+  '& .MuiOutlinedInput-root': {
+    borderRadius: '8px',
+    backgroundColor: theme.palette.grey[50],
+    borderColor: theme.palette.grey[200],
+    transition: 'all 0.3s ease',
+    '&:hover': {
+      backgroundColor: theme.palette.grey[100],
+      borderColor: theme.palette.grey[300],
+    },
+    '&.Mui-focused': {
+      backgroundColor: theme.palette.common.white,
+      borderColor: theme.palette.primary.main,
+      boxShadow: `0 0 0 2px ${alpha(theme.palette.primary.main, 0.2)}`,
+    },
   },
-  '&::before': {
-    content: '""',
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    background: 'rgba(255,255,255,0.1)',
-    opacity: 0,
-    transition: 'opacity 0.3s ease',
+  '& .MuiOutlinedInput-input': {
+    padding: theme.spacing(1.5),
+    fontSize: '14px',
   },
-  '&:hover': {
-    transform: 'translateY(-12px) scale(1.02)',
-    boxShadow: '0 20px 60px rgba(0,0,0,0.2)',
-    '&::before': {
-      opacity: 1,
+  '& .MuiInputLabel-outlined': {
+    fontSize: '14px',
+    transform: 'translate(14px, 12px) scale(1)',
+    '&.MuiInputLabel-shrink': {
+      transform: 'translate(14px, -6px) scale(0.75)',
     },
   },
 }));
 
-const IconWrapper = styled(Box)(({ theme }) => ({
-  width: '80px',
-  height: '80px',
-  borderRadius: '50%',
-  background: 'rgba(255,255,255,0.2)',
-  backdropFilter: 'blur(10px)',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  fontSize: '1.8rem',
-  fontWeight: 'bold',
-  letterSpacing: '1px',
-  boxShadow: 'inset 0 0 20px rgba(255,255,255,0.3)',
-  border: '1px solid rgba(255,255,255,0.2)',
-  animation: `${float} 3s ease-in-out infinite`
-}));
-
-const ActionButton = styled(IconButton)(({ theme }) => ({
-  width: '40px',
-  height: '40px',
-  background: 'rgba(255,255,255,0.25)',
-  backdropFilter: 'blur(10px)',
-  border: '1px solid rgba(255,255,255,0.3)',
-  color: 'white',
-  transition: 'all 0.3s ease',
+const ActionIconButton = styled(IconButton)(({ theme }) => ({
+  width: '32px',
+  height: '32px',
+  backgroundColor: theme.palette.grey[50],
+  border: `1px solid ${theme.palette.grey[200]}`,
   '&:hover': {
-    background: 'rgba(255,255,255,0.4)',
-    transform: 'scale(1.1)',
-    animation: `${pulse} 0.6s ease-in-out`
+    backgroundColor: theme.palette.grey[100],
   }
 }));
 
-const HeaderSection = styled(Box)(({ theme }) => ({
-  background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.secondary.main} 100%)`,
-  borderRadius: '24px',
-  padding: theme.spacing(4),
-  marginBottom: theme.spacing(4),
-  color: 'white',
-  position: 'relative',
-  overflow: 'hidden',
-  '&::before': {
-    content: '""',
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    background: 'url("data:image/svg+xml,%3Csvg width=\"60\" height=\"60\" viewBox=\"0 0 60 60\" xmlns=\"http://www.w3.org/2000/svg\"%3E%3Cg fill=\"none\" fill-rule=\"evenodd\"%3E%3Cg fill=\"%23ffffff\" fill-opacity=\"0.1\"%3E%3Ccircle cx=\"30\" cy=\"30\" r=\"4\"/%3E%3C/g%3E%3C/g%3E%3C/svg%3E\")',
-    opacity: 0.5,
+const PrimaryButton = styled(Button)(({ theme }) => ({
+  borderRadius: '8px',
+  textTransform: 'none',
+  fontWeight: '500',
+  padding: theme.spacing(0.75, 2),
+  fontSize: '14px',
+  boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
+  '&:hover': {
+    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+  }
+}));
+
+const SecondaryButton = styled(Button)(({ theme }) => ({
+  borderRadius: '8px',
+  textTransform: 'none',
+  fontWeight: '500',
+  padding: theme.spacing(0.5, 1.5),
+  fontSize: '13px',
+  color: theme.palette.text.primary,
+  backgroundColor: theme.palette.grey[50],
+  border: `1px solid ${theme.palette.grey[200]}`,
+  '&:hover': {
+    backgroundColor: theme.palette.grey[100],
+    borderColor: theme.palette.grey[300],
   }
 }));
 
 const StyledDialog = styled(Dialog)(({ theme }) => ({
   '& .MuiDialog-paper': {
-    borderRadius: '20px',
-    backdropFilter: 'blur(20px)',
-    background: `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.95)} 0%, ${alpha(theme.palette.secondary.main, 0.95)} 100%)`,
-    border: `1px solid ${alpha(theme.palette.common.white, 0.2)}`,
-    boxShadow: '0 20px 60px rgba(0,0,0,0.3)'
+    borderRadius: '16px',
+    boxShadow: '0 20px 40px rgba(0, 0, 0, 0.1)',
+    border: `1px solid ${theme.palette.grey[200]}`,
   }
 }));
+
+const EmptyStateContainer = styled(Paper)(({ theme }) => ({
+  padding: theme.spacing(6, 4),
+  textAlign: 'center',
+  borderRadius: '16px',
+  backgroundColor: theme.palette.grey[50],
+  border: `1px solid ${theme.palette.grey[200]}`,
+  boxShadow: 'none',
+}));
+
+const LoaderContainer = styled(Box)(({ theme }) => ({
+  display: 'flex',
+  justifyContent: 'center',
+  alignItems: 'center',
+  minHeight: '60vh',
+  opacity: 1,
+  transition: 'opacity 0.3s ease-in-out',
+  '&.fade-out': {
+    opacity: 0,
+  },
+}));
+
+const ImageUploadContainer = styled(Box)(({ theme }) => ({
+  border: `2px dashed ${theme.palette.grey[300]}`,
+  borderRadius: '12px',
+  padding: theme.spacing(3),
+  textAlign: 'center',
+  backgroundColor: theme.palette.grey[50],
+  cursor: 'pointer',
+  transition: 'all 0.2s ease',
+  '&:hover': {
+    borderColor: theme.palette.primary.main,
+    backgroundColor: alpha(theme.palette.primary.main, 0.05),
+  },
+  '&.dragover': {
+    borderColor: theme.palette.primary.main,
+    backgroundColor: alpha(theme.palette.primary.main, 0.1),
+  }
+}));
+
+const PreviewImage = styled('img')({
+  width: '100%',
+  maxHeight: '200px',
+  objectFit: 'cover',
+  borderRadius: '8px',
+  marginTop: '16px',
+});
 
 const Categories = () => {
   const theme = useTheme();
   const navigate = useNavigate();
   const [categories, setCategories] = useState([]);
+  const [searchTerm, setSearchTerm] = useState(''); // State for search term
   const [showModal, setShowModal] = useState(false);
   const [categoryName, setCategoryName] = useState('');
+  const [selectedImage, setSelectedImage] = useState(null);
+  const [previewUrl, setPreviewUrl] = useState('');
   const [isEditing, setIsEditing] = useState(false);
   const [editCategoryId, setEditCategoryId] = useState(null);
   const [loading, setLoading] = useState(true);
-
-  const getCategoryInitials = (category) => {
-    return category.name?.substring(0, 2).toUpperCase() || '';
-  };
+  const [uploading, setUploading] = useState(false);
 
   const fetchCategories = async () => {
     try {
@@ -162,9 +180,11 @@ const Categories = () => {
       const response = await axios.get(API_BASE);
       const categoriesData = response.data.map(category => ({
         id: category.categoryId,
-        name: category.categoryName
+        name: category.categoryName,
+        imageUrl: category.imageUrl
       }));
       setCategories(categoriesData);
+      setSearchTerm(''); // Reset search term when categories change
     } catch (error) {
       console.error("Error fetching categories:", error);
     } finally {
@@ -176,33 +196,89 @@ const Categories = () => {
     fetchCategories();
   }, []);
 
+  // Filter categories based on search term
+  const filteredCategories = categories.filter((cat) =>
+    cat.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const handleImageSelect = (event) => {
+    const file = event.target.files[0];
+    if (file) {
+      setSelectedImage(file);
+      const reader = new FileReader();
+      reader.onload = (e) => setPreviewUrl(e.target.result);
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleDrop = (event) => {
+    event.preventDefault();
+    const file = event.dataTransfer.files[0];
+    if (file && file.type.startsWith('image/')) {
+      setSelectedImage(file);
+      const reader = new FileReader();
+      reader.onload = (e) => setPreviewUrl(e.target.result);
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleDragOver = (event) => {
+    event.preventDefault();
+    event.currentTarget.classList.add('dragover');
+  };
+
+  const handleDragLeave = (event) => {
+    event.preventDefault();
+    event.currentTarget.classList.remove('dragover');
+  };
+
   const handleSaveCategory = async () => {
-    if (!categoryName) return;
+    if (!categoryName.trim()) return;
+
     try {
+      setUploading(true);
+      const formData = new FormData();
+      formData.append('categoryName', categoryName);
+      
+      if (selectedImage) {
+        formData.append('image', selectedImage);
+      }
+
       if (isEditing) {
-        await axios.put(`${API_BASE}/${editCategoryId}`, {
-          categoryName: categoryName
+        const response = await axios.put(`${API_BASE}/${editCategoryId}`, formData, {
+          headers: { 'Content-Type': 'multipart/form-data' }
         });
+        
         setCategories(prev =>
           prev.map(cat =>
-            cat.id === editCategoryId ? { ...cat, name: categoryName } : cat
+            cat.id === editCategoryId 
+              ? { 
+                  ...cat, 
+                  name: categoryName,
+                  imageUrl: response.data.imageUrl || cat.imageUrl
+                } 
+              : cat
           )
         );
       } else {
-        const response = await axios.post(API_BASE, {
-          categoryName: categoryName
+        const response = await axios.post(`${API_BASE}/category`, formData, {
+          headers: { 'Content-Type': 'multipart/form-data' }
         });
-        const newCategory = response.data;
-        const categoryToAdd = {
-          id: newCategory.categoryId,
-          name: categoryName
+        
+        const newCategory = {
+          id: response.data.categoryId,
+          name: response.data.categoryName,
+          imageUrl: response.data.imageUrl
         };
-        setCategories(prev => [...prev, categoryToAdd]);
+        setCategories(prev => [...prev, newCategory]);
       }
+      
       handleModalClose();
     } catch (err) {
       console.error('Error saving category:', err);
-      alert(`Error saving category: ${err.message || 'Unknown error'}`);
+      alert(`Error saving category: ${err.response?.data?.message || err.message || 'Unknown error'}`);
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -219,153 +295,216 @@ const Categories = () => {
   const handleModalClose = () => {
     setShowModal(false);
     setCategoryName('');
+    setSelectedImage(null);
+    setPreviewUrl('');
     setIsEditing(false);
     setEditCategoryId(null);
   };
 
-  return (
-    <Container maxWidth="xl" sx={{ py: 4 }}>
-      {/* Header Section */}
-      <HeaderSection>
-        <Stack
-          direction={{ xs: 'column', sm: 'row' }}
-          justifyContent="space-between"
-          alignItems={{ xs: 'flex-start', sm: 'center' }}
-          spacing={2}
-        >
-          <Box sx={{ position: 'relative', zIndex: 1 }}>
-            <Stack direction="row" alignItems="center" spacing={2}>
-              <CategoryIcon sx={{ fontSize: 40 }} />
-              <Box>
-                <Typography variant="h3" fontWeight="bold" gutterBottom>
-                  Categories
-                </Typography>
-                <Typography variant="h6" sx={{ opacity: 0.9 }}>
-                  Manage your product categories
-                </Typography>
-              </Box>
-            </Stack>
-          </Box>
-          <Zoom in={true} timeout={1000}>
-            <Fab
-              color="secondary"
-              variant="extended"
-              onClick={() => {
-                setIsEditing(false);
-                setCategoryName('');
-                setShowModal(true);
-              }}
-              sx={{
-                background: 'rgba(255,255,255,0.2)',
-                backdropFilter: 'blur(20px)',
-                border: '1px solid rgba(255,255,255,0.3)',
-                color: 'white',
-                '&:hover': {
-                  background: 'rgba(255,255,255,0.3)',
-                  transform: 'scale(1.05)',
-                },
-              }}
-            >
-              <AddIcon sx={{ mr: 1 }} />
-              Add Category
-            </Fab>
-          </Zoom>
-        </Stack>
-      </HeaderSection>
+  const handleViewProducts = (categoryId, categoryName) => {
+    navigate(`/products/${categoryId}`, {
+      state: { id: categoryId, name: categoryName }
+    });
+  };
 
-      {/* Loading State */}
+  const handleEditCategory = (category) => {
+    setIsEditing(true);
+    setEditCategoryId(category.id);
+    setCategoryName(category.name || '');
+    setPreviewUrl(category.imageUrl || '');
+    setSelectedImage(null);
+    setShowModal(true);
+  };
+
+  return (
+    <PageContainer maxWidth="xl">
+      {/* Header */}
+      <HeaderContainer>
+        <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <Box>
+            <Typography
+              variant="h4"
+              fontWeight="600"
+              color="text.primary"
+              sx={{ mb: 0.5, fontSize: { xs: '1.75rem', sm: '2.125rem' } }}
+            >
+              Categories
+            </Typography>
+            <Typography
+              variant="body1"
+              color="text.secondary"
+              sx={{ fontSize: '15px' }}
+            >
+              Organize and manage your product categories with images
+            </Typography>
+          </Box>
+          <SearchBar
+            label="Search Categories"
+            variant="outlined"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon sx={{ color: 'grey.500' }} />
+                </InputAdornment>
+              ),
+              endAdornment: searchTerm && (
+                <InputAdornment position="end">
+                  <IconButton onClick={() => setSearchTerm('')} edge="end">
+                    <ClearIcon sx={{ color: 'grey.500' }} />
+                  </IconButton>
+                </InputAdornment>
+              ),
+            }}
+          />
+        </Box>
+        <PrimaryButton
+          variant="contained"
+          startIcon={<AddIcon />}
+          onClick={() => {
+            setIsEditing(false);
+            setCategoryName('');
+            setSelectedImage(null);
+            setPreviewUrl('');
+            setShowModal(true);
+          }}
+          sx={{ minWidth: '140px', flexShrink: 0 }}
+        >
+          Add Category
+        </PrimaryButton>
+      </HeaderContainer>
+
+      {/* Loader */}
       {loading && (
-        <Grid container spacing={3}>
-          {[...Array(8)].map((_, index) => (
-            <Grid item xs={12} sm={6} md={4} lg={3} key={index}>
-              <Card sx={{ borderRadius: '20px', height: 300 }}>
-                <Skeleton variant="rectangular" height={200} />
-                <CardContent>
-                  <Skeleton variant="text" height={30} />
-                  <Skeleton variant="text" height={20} width="60%" />
-                </CardContent>
-              </Card>
-            </Grid>
-          ))}
-        </Grid>
+        <LoaderContainer>
+          <CircularProgress size={60} thickness={4} />
+        </LoaderContainer>
+      )}
+
+      {/* Stats Bar */}
+      {!loading && filteredCategories.length > 0 && (
+        <Box sx={{ mb: 4 }}>
+          <Chip
+            icon={<BusinessIcon />}
+            label={`${filteredCategories.length} ${filteredCategories.length === 1 ? 'Category' : 'Categories'}`}
+            variant="outlined"
+            sx={{
+              borderColor: 'grey.300',
+              backgroundColor: 'grey.50',
+              '& .MuiChip-label': { fontWeight: '500' }
+            }}
+          />
+        </Box>
       )}
 
       {/* Empty State */}
-      {!loading && categories.length === 0 && (
-        <Paper
-          elevation={3}
-          sx={{
-            p: 6,
-            textAlign: 'center',
-            borderRadius: '20px',
-            background: `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.1)} 0%, ${alpha(theme.palette.secondary.main, 0.1)} 100%)`,
-          }}
-        >
-          <CategoryIcon sx={{ fontSize: 80, color: 'primary.main', mb: 2 }} />
-          <Typography variant="h4" fontWeight="bold" color="primary" gutterBottom>
-            No Categories Found
+      {!loading && filteredCategories.length === 0 && (
+        <EmptyStateContainer>
+          <CategoryIcon sx={{ fontSize: 48, color: 'grey.400', mb: 2 }} />
+          <Typography variant="h6" fontWeight="500" color="text.primary" gutterBottom>
+            {searchTerm ? 'No matching categories found' : 'No categories yet'}
           </Typography>
-          <Typography variant="body1" color="text.secondary">
-            Start adding categories to organize your products.
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+            {searchTerm ? 'Try a different search term' : 'Create your first category to start organizing products'}
           </Typography>
-        </Paper>
+          {!searchTerm && (
+            <PrimaryButton
+              variant="contained"
+              startIcon={<AddIcon />}
+              onClick={() => {
+                setIsEditing(false);
+                setCategoryName('');
+                setSelectedImage(null);
+                setPreviewUrl('');
+                setShowModal(true);
+              }}
+            >
+              Create Category
+            </PrimaryButton>
+          )}
+        </EmptyStateContainer>
       )}
 
       {/* Categories Grid */}
-      <Grid container spacing={4}>
-        {categories.map((cat, index) => (
-          <Grid item xs={12} sm={6} md={4} lg={3} key={cat.id}>
-            <Slide direction="up" in={!loading} timeout={300 + index * 100}>
-              <StyledCard 
-                gradient={gradientColors[index % gradientColors.length]}
-                onClick={() => navigate(`/products/${cat.id}`, { state: cat })}
-              >
-                <CardContent sx={{ textAlign: 'center', pt: 4, flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                  <IconWrapper sx={{ mx: 'auto', mb: 3 }}>
-                    {getCategoryInitials(cat)}
-                  </IconWrapper>
-                  <Typography variant="h5" fontWeight="bold" gutterBottom>
-                    {cat.name}
-                  </Typography>
-                </CardContent>
-                <CardActions sx={{ justifyContent: 'center', px: 3, pb: 3 }}>
-                  <Stack direction="row" spacing={2}>
-                    <Tooltip title="Edit Category" arrow>
-                      <ActionButton
+      {!loading && filteredCategories.length > 0 && (
+        <Grid container spacing={3} justifyContent="center">
+          {filteredCategories.map((cat) => (
+            <Grid item key={cat.id}>
+              <CardDesign
+                imageUrl={cat.imageUrl}
+                placeholderText="No Image"
+                placeholderIcon={<ImageIcon sx={{ fontSize: 40, mb: 1 }} />}
+                actions={
+                  <>
+                    <Typography variant="caption" color="text.secondary">
+                      Manage
+                    </Typography>
+                    <Stack direction="row" spacing={1}>
+                      <ActionIconButton
                         onClick={(e) => {
                           e.stopPropagation();
-                          setIsEditing(true);
-                          setEditCategoryId(cat.id);
-                          setCategoryName(cat.name || '');
-                          setShowModal(true);
+                          handleEditCategory(cat);
                         }}
                       >
-                        <EditIcon fontSize="small" />
-                      </ActionButton>
-                    </Tooltip>
-                    <Tooltip title="Delete Category" arrow>
-                      <ActionButton
-                        sx={{
-                          background: 'rgba(255,0,0,0.3)',
-                          '&:hover': { background: 'rgba(255,0,0,0.5)' }
-                        }}
+                        <EditIcon sx={{ fontSize: '16px' }} />
+                      </ActionIconButton>
+                      <ActionIconButton
                         onClick={(e) => {
                           e.stopPropagation();
                           if (window.confirm(`Delete "${cat.name}"?`)) {
                             handleDelete(cat.id);
                           }
                         }}
+                        sx={{
+                          '&:hover': {
+                            backgroundColor: alpha(theme.palette.error.main, 0.1),
+                            borderColor: theme.palette.error.main,
+                            color: theme.palette.error.main,
+                          }
+                        }}
                       >
-                        <DeleteIcon fontSize="small" />
-                      </ActionButton>
-                    </Tooltip>
-                  </Stack>
-                </CardActions>
-              </StyledCard>
-            </Slide>
-          </Grid>
-        ))}
-      </Grid>
+                        <DeleteIcon sx={{ fontSize: '16px' }} />
+                      </ActionIconButton>
+                    </Stack>
+                  </>
+                }
+              >
+                <CardContent sx={{ p: 2.5 }}>
+                  <Typography
+                    variant="h6"
+                    fontWeight="600"
+                    color="text.primary"
+                    sx={{
+                      mb: 0.5,
+                      fontSize: '16px',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap'
+                    }}
+                  >
+                    {cat.name}
+                  </Typography>
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    sx={{ fontSize: '13px', mb: 2, overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}
+                  >
+                    Product category
+                  </Typography>
+                  <SecondaryButton
+                    fullWidth
+                    startIcon={<ViewIcon sx={{ fontSize: '16px' }} />}
+                    onClick={() => handleViewProducts(cat.id, cat.name)}
+                  >
+                    View Products
+                  </SecondaryButton>
+                </CardContent>
+              </CardDesign>
+            </Grid>
+          ))}
+        </Grid>
+      )}
 
       {/* Add/Edit Category Modal */}
       <StyledDialog
@@ -373,83 +512,101 @@ const Categories = () => {
         onClose={handleModalClose}
         maxWidth="sm"
         fullWidth
-        TransitionComponent={Zoom}
-        transitionDuration={400}
       >
-        <DialogTitle
-          sx={{
-            background: 'rgba(255,255,255,0.1)',
-            color: 'white',
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-          }}
-        >
-          <Stack direction="row" alignItems="center" spacing={2}>
-            <CategoryIcon />
-            <Typography variant="h5" fontWeight="bold">
-              {isEditing ? 'Edit Category' : 'Add New Category'}
+        <DialogTitle sx={{ pb: 1 }}>
+          <Stack direction="row" alignItems="center" justifyContent="space-between">
+            <Typography variant="h6" fontWeight="500">
+              {isEditing ? 'Edit Category' : 'Create New Category'}
             </Typography>
+            <IconButton
+              onClick={handleModalClose}
+              size="small"
+              sx={{ color: 'grey.500' }}
+            >
+              <CloseIcon />
+            </IconButton>
           </Stack>
-          <IconButton onClick={handleModalClose} sx={{ color: 'white' }}>
-            <CloseIcon />
-          </IconButton>
         </DialogTitle>
-        <Divider sx={{ background: 'rgba(255,255,255,0.2)' }} />
-        <DialogContent sx={{ pt: 3, color: 'white' }}>
+        
+        <DialogContent sx={{ pt: 2 }}>
           <TextField
             fullWidth
             label="Category Name"
             value={categoryName}
             onChange={(e) => setCategoryName(e.target.value)}
             variant="outlined"
+            size="medium"
             sx={{
+              mb: 3,
               '& .MuiOutlinedInput-root': {
-                color: 'white',
-                '& fieldset': { borderColor: 'rgba(255,255,255,0.5)' },
-                '&:hover fieldset': { borderColor: 'rgba(255,255,255,0.8)' },
-              },
-              '& .MuiInputLabel-root': { color: 'rgba(255,255,255,0.8)' },
+                borderRadius: '8px',
+              }
             }}
           />
+
+          <Typography variant="subtitle2" color="text.primary" sx={{ mb: 2 }}>
+            Category Image
+          </Typography>
+
+          <input
+            type="file"
+            accept="image/*"
+            onChange={handleImageSelect}
+            style={{ display: 'none' }}
+            id="image-upload"
+          />
+
+          <ImageUploadContainer
+            onClick={() => document.getElementById('image-upload').click()}
+            onDrop={handleDrop}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+          >
+            {previewUrl ? (
+              <Box>
+                <PreviewImage src={previewUrl} alt="Preview" />
+                <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                  Click to change image
+                </Typography>
+              </Box>
+            ) : (
+              <Box>
+                <CloudUploadIcon sx={{ fontSize: 48, color: 'grey.400', mb: 2 }} />
+                <Typography variant="body1" color="text.primary" gutterBottom>
+                  Click to upload or drag and drop
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  PNG, JPG, JPEG up to 10MB
+                </Typography>
+              </Box>
+            )}
+          </ImageUploadContainer>
         </DialogContent>
-        <DialogActions sx={{ p: 3, gap: 2 }}>
+
+        <DialogActions sx={{ p: 3, pt: 2, gap: 1 }}>
           <Button
             onClick={handleModalClose}
             variant="outlined"
+            disabled={uploading}
             sx={{
-              borderColor: 'rgba(255,255,255,0.5)',
-              color: 'white',
-              '&:hover': {
-                borderColor: 'white',
-                background: 'rgba(255,255,255,0.1)',
-              },
+              textTransform: 'none',
+              borderRadius: '8px',
+              borderColor: 'grey.300',
+              color: 'text.primary',
             }}
           >
             Cancel
           </Button>
-          <Button
+          <PrimaryButton
             onClick={handleSaveCategory}
             variant="contained"
-            disabled={!categoryName}
-            sx={{
-              background: 'rgba(255,255,255,0.2)',
-              backdropFilter: 'blur(10px)',
-              border: '1px solid rgba(255,255,255,0.3)',
-              '&:hover': {
-                background: 'rgba(255,255,255,0.3)',
-              },
-              '&:disabled': {
-                background: 'rgba(255,255,255,0.1)',
-                color: 'rgba(255,255,255,0.5)',
-              },
-            }}
+            disabled={!categoryName.trim() || uploading}
           >
-            {isEditing ? 'Update Category' : 'Add Category'}
-          </Button>
+            {uploading ? 'Saving...' : (isEditing ? 'Update' : 'Create')}
+          </PrimaryButton>
         </DialogActions>
       </StyledDialog>
-    </Container>
+    </PageContainer>
   );
 };
 
