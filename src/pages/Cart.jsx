@@ -21,18 +21,16 @@ import {
   Paper,
   Stack,
   MenuItem,
-  Fade,
-  Slide,
-  Zoom,
-  Backdrop,
-  useTheme,
-  alpha,
   FormControl,
   InputLabel,
   Select,
-  Fab,
-  Badge,
-  Tooltip
+  Tooltip,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow
 } from '@mui/material';
 import {
   Delete as DeleteIcon,
@@ -48,8 +46,8 @@ import {
   CheckCircle as CheckIcon,
   ShoppingBag as BagIcon
 } from '@mui/icons-material';
-import { styled } from '@mui/material/styles';
-
+import { ToastContainer, toast } from 'react-toastify'; // Added react-toastify imports
+import 'react-toastify/dist/ReactToastify.css'; // Added CSS import for react-toastify
 import useCartStore from '../store/useCartStore';
 import useAuthStore from '../store/authStore';
 import useCustomerStore from '../store/customerStore';
@@ -57,55 +55,7 @@ import { useAssignDeliveryStore } from '../store/assignDeliveryStore';
 
 const API_BASE = 'https://logistic-project-backend.onrender.com/api';
 
-// Styled components for modern UI
-const GradientCard = styled(Card)(({ theme }) => ({
-  background: `linear-gradient(135deg, ${alpha(theme.palette.primary.light, 0.1)} 0%, ${alpha(theme.palette.secondary.light, 0.05)} 100%)`,
-  backdropFilter: 'blur(10px)',
-  border: `1px solid ${alpha(theme.palette.primary.main, 0.1)}`,
-  borderRadius: 8,
-  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-  '&:hover': {
-    transform: 'translateY(-4px)',
-    boxShadow: theme.shadows[8],
-    border: `1px solid ${alpha(theme.palette.primary.main, 0.2)}`,
-  }
-}));
-
-const ProductCard = styled(Card)(({ theme }) => ({
-  borderRadius: 8,
-  background: theme.palette.background.paper,
-  border: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
-  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-  overflow: 'hidden',
-  position: 'relative',
-  '&:hover': {
-    transform: 'translateY(-4px)',
-    boxShadow: `0 8px 24px ${alpha(theme.palette.primary.main, 0.1)}`,
-  }
-}));
-
-const GlassmorphismDialog = styled(Dialog)(({ theme }) => ({
-  '& .MuiDialog-paper': {
-    borderRadius: 8,
-    background: `rgba(255, 255, 255, 0.95)`,
-    backdropFilter: 'blur(20px)',
-    border: `1px solid ${alpha(theme.palette.primary.main, 0.1)}`,
-    boxShadow: `0 20px 60px ${alpha(theme.palette.primary.main, 0.1)}`,
-  }
-}));
-
-const ModernFab = styled(Fab)(({ theme }) => ({
-  background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.secondary.main} 100%)`,
-  '&:hover': {
-    background: `linear-gradient(135deg, ${theme.palette.primary.dark} 0%, ${theme.palette.secondary.dark} 100%)`,
-    transform: 'scale(1.1)',
-  },
-  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-}));
-
 const Cart = () => {
-  const theme = useTheme();
-  
   // Store hooks
   const cart = useCartStore((state) => state.cart);
   const updateQuantity = useCartStore((state) => state.updateQuantity);
@@ -192,15 +142,24 @@ const Cart = () => {
 
   const handleCheckout = () => {
     if (!customerName || !address || !deliveryDate || !agent) {
-      alert('Please fill in all delivery details before proceeding.');
+      toast.error('Please fill in all delivery details before proceeding.', {
+        position: 'top-right',
+        autoClose: 3000,
+      });
       return;
     }
     if (!/\S+@\S+\.\S+/.test(customerEmail)) {
-      alert('Please enter a valid email address.');
+      toast.error('Please enter a valid email address.', {
+        position: 'top-right',
+        autoClose: 3000,
+      });
       return;
     }
     if (!/^\d{10}$/.test(customerPhone)) {
-      alert('Please enter a valid 10-digit phone number.');
+      toast.error('Please enter a valid 10-digit phone number.', {
+        position: 'top-right',
+        autoClose: 3000,
+      });
       return;
     }
     setShowModal(true);
@@ -236,10 +195,16 @@ const Cart = () => {
       setDeliveryDate('');
       setAgent('');
       setShowModal(false);
-      alert('Order placed successfully! Your cart has been cleared.');
+      toast.success('Order assigned successfully!', {
+        position: 'top-right',
+        autoClose: 3000,
+      });
     } catch (err) {
       console.error('Failed to place order:', err);
-      alert('Failed to place order. Please try again.');
+      toast.error('Failed to place order. Please try again.', {
+        position: 'top-right',
+        autoClose: 3000,
+      });
     } finally {
       setIsCheckoutLoading(false);
     }
@@ -247,15 +212,15 @@ const Cart = () => {
 
   if (isLoading) {
     return (
-      <Box 
-        display="flex" 
-        justifyContent="center" 
-        alignItems="center" 
+      <Box
+        display="flex"
+        justifyContent="center"
+        alignItems="center"
         minHeight="60vh"
         flexDirection="column"
       >
-        <CircularProgress size={60} thickness={4} />
-        <Typography variant="h6" sx={{ mt: 2, color: 'text.secondary' }}>
+        <CircularProgress size={40} />
+        <Typography variant="body1" sx={{ mt: 2, color: 'text.secondary' }}>
           Loading your cart...
         </Typography>
       </Box>
@@ -263,177 +228,154 @@ const Cart = () => {
   }
 
   return (
-    <Container maxWidth="xl" sx={{ py: 4 }}>
+    <Container maxWidth="lg" sx={{ py: 3 }}>
       {/* Header */}
-      <Box display="flex" alignItems="center" mb={4}>
-        <Avatar sx={{ bgcolor: 'primary.main', mr: 2, width: 56, height: 56 }}>
-          <ShoppingCartIcon fontSize="large" />
-        </Avatar>
-        <Box>
-          <Typography variant="h4" fontWeight="bold" color="primary.main">
-            Shopping Cart
-          </Typography>
-          <Typography variant="subtitle2" color="text.secondary">
-            {cart.length} {cart.length === 1 ? 'item' : 'items'} in your cart
-          </Typography>
-        </Box>
+      <Box display="flex" alignItems="center" mb={3}>
+        <ShoppingCartIcon sx={{ fontSize: 28, color: 'primary.main', mr: 1 }} />
+        <Typography variant="h4" fontWeight="600" color="text.primary">
+          Shopping Cart
+        </Typography>
+        <Chip
+          label={`${cart.length} ${cart.length === 1 ? 'item' : 'items'}`}
+          size="small"
+          sx={{ ml: 2 }}
+        />
       </Box>
 
       {/* Error Alert */}
       {error && (
-        <Fade in={!!error}>
-          <Alert 
-            severity="warning" 
-            onClose={clearError}
-            sx={{ mb: 3, borderRadius: 2 }}
-          >
-            {error}
-          </Alert>
-        </Fade>
+        <Alert
+          severity="warning"
+          onClose={clearError}
+          sx={{ mb: 3 }}
+        >
+          {error}
+        </Alert>
       )}
 
       {cart.length === 0 ? (
-        <Zoom in={cart.length === 0}>
-          <Paper 
-            elevation={0}
-            sx={{ 
-              p: 6, 
-              textAlign: 'center', 
-              borderRadius: 8,
-              background: `linear-gradient(135deg, ${alpha(theme.palette.primary.light, 0.1)} 0%, ${alpha(theme.palette.secondary.light, 0.05)} 100%)`,
-            }}
-          >
-            <Avatar sx={{ bgcolor: 'primary.main', width: 80, height: 80, mx: 'auto', mb: 2 }}>
-              <BagIcon fontSize="large" />
-            </Avatar>
-            <Typography variant="h5" gutterBottom fontWeight="medium">
-              Your cart is empty
-            </Typography>
-            <Typography variant="body1" color="text.secondary">
-              Start shopping to add items to your cart
-            </Typography>
-          </Paper>
-        </Zoom>
+        <Paper
+          elevation={1}
+          sx={{
+            p: 6,
+            textAlign: 'center',
+            border: '1px solid',
+            borderColor: 'divider'
+          }}
+        >
+          <BagIcon sx={{ fontSize: 48, color: 'text.secondary', mb: 2 }} />
+          <Typography variant="h6" gutterBottom>
+            Your cart is empty
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            Start shopping to add items to your cart
+          </Typography>
+        </Paper>
       ) : (
         <>
-          {/* Cart Items */}
-          {/* Cart Items */}
-<Grid container spacing={3} mb={4}>
-  {cart.map((item, index) => {
-    const uniqueKey = `${item.productId}-${index}`;
-    const price = Number(item.price) || 0;
-    const quantity = Number(item.quantity) || 0;
-    const total = price * quantity;
+          {/* Cart Items Table */}
+          <Paper elevation={1} sx={{ mb: 3 }}>
+            <TableContainer>
+              <Table>
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Product</TableCell>
+                    <TableCell align="center">Price</TableCell>
+                    <TableCell align="center">Quantity</TableCell>
+                    <TableCell align="center">Total</TableCell>
+                    <TableCell align="center">Actions</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {cart.map((item, index) => {
+                    const uniqueKey = `${item.productId}-${index}`;
+                    const price = Number(item.price) || 0;
+                    const quantity = Number(item.quantity) || 0;
+                    const total = price * quantity;
 
-    return (
-      <Grid item xs={12} sm={6} md={4} key={uniqueKey}>
-        <Slide in={true} direction="up" timeout={300 + index * 100}>
-          <ProductCard>
-            <CardContent sx={{ p: 3 }}>
-              <Box display="flex" alignItems="flex-start" gap={2}>
-                <Avatar
-                  src={item.image}
-                  sx={{ 
-                    width: 80, 
-                    height: 80, 
-                    borderRadius: 3,
-                    background: `linear-gradient(135deg, ${theme.palette.primary.light} 0%, ${theme.palette.secondary.light} 100%)`,
-                    fontSize: '1.5rem',
-                    fontWeight: 'bold'
-                  }}
-                >
-                  {(item.name || item.productName || 'P').slice(0, 2)}
-                </Avatar>
-                
-                <Box flex={1}>
-                  <Typography variant="h6" fontWeight="bold" gutterBottom>
-                    {item.name || item.productName || 'Unknown Product'}
-                  </Typography>
-                  
-                  <Chip 
-                    label={`₹${price.toFixed(2)}`}
-                    color="primary"
-                    size="small"
-                    sx={{ mb: 2 }}
-                  />
-                  
-                  <Box display="flex" alignItems="center" gap={1} mb={2}>
-                    <IconButton 
-                      size="small"
-                      onClick={() => handleUpdateQuantity(item.productId, -1)}
-                      disabled={quantity <= 1}
-                      sx={{ 
-                        bgcolor: alpha(theme.palette.error.main, 0.1),
-                        '&:hover': { bgcolor: alpha(theme.palette.error.main, 0.2) }
-                      }}
-                    >
-                      <RemoveIcon fontSize="small" />
-                    </IconButton>
-                    
-                    <Typography variant="h6" fontWeight="bold" mx={2}>
-                      {quantity}
-                    </Typography>
-                    
-                    <IconButton 
-                      size="small"
-                      onClick={() => handleUpdateQuantity(item.productId, 1)}
-                      sx={{ 
-                        bgcolor: alpha(theme.palette.success.main, 0.1),
-                        '&:hover': { bgcolor: alpha(theme.palette.success.main, 0.2) }
-                      }}
-                    >
-                      <AddIcon fontSize="small" />
-                    </IconButton>
-                  </Box>
-                  
-                  <Box display="flex" justifyContent="space-between" alignItems="center">
-                    <Typography variant="h6" fontWeight="bold" color="primary.main">
-                      ₹{total.toFixed(2)}
-                    </Typography>
-                    
-                    <Tooltip title="Remove item">
-                      <IconButton 
-                        onClick={() => handleRemove(item.productId)}
-                        color="error"
-                        sx={{ 
-                          '&:hover': { 
-                            bgcolor: alpha(theme.palette.error.main, 0.1),
-                            transform: 'scale(1.1)'
-                          }
-                        }}
-                      >
-                        <DeleteIcon />
-                      </IconButton>
-                    </Tooltip>
-                  </Box>
-                </Box>
-              </Box>
-            </CardContent>
-          </ProductCard>
-        </Slide>
-      </Grid>
-    );
-  })}
-</Grid>
+                    return (
+                      <TableRow key={uniqueKey} hover>
+                        <TableCell>
+                          <Box display="flex" alignItems="center" gap={2}>
+                            <Avatar
+                              src={item.image}
+                              sx={{
+                                width: 50,
+                                height: 50,
+                                bgcolor: 'primary.light'
+                              }}
+                            >
+                              {(item.name || item.productName || 'P').slice(0, 2)}
+                            </Avatar>
+                            <Typography variant="body1" fontWeight="500">
+                              {item.name || item.productName || 'Unknown Product'}
+                            </Typography>
+                          </Box>
+                        </TableCell>
+                        <TableCell align="center">
+                          <Typography variant="body1">
+                            ₹{price.toFixed(2)}
+                          </Typography>
+                        </TableCell>
+                        <TableCell align="center">
+                          <Box display="flex" alignItems="center" justifyContent="center" gap={1}>
+                            <IconButton
+                              size="small"
+                              onClick={() => handleUpdateQuantity(item.productId, -1)}
+                              disabled={quantity <= 1}
+                            >
+                              <RemoveIcon fontSize="small" />
+                            </IconButton>
+                            <Typography variant="body1" sx={{ minWidth: 30, textAlign: 'center' }}>
+                              {quantity}
+                            </Typography>
+                            <IconButton
+                              size="small"
+                              onClick={() => handleUpdateQuantity(item.productId, 1)}
+                            >
+                              <AddIcon fontSize="small" />
+                            </IconButton>
+                          </Box>
+                        </TableCell>
+                        <TableCell align="center">
+                          <Typography variant="body1" fontWeight="600">
+                            ₹{total.toFixed(2)}
+                          </Typography>
+                        </TableCell>
+                        <TableCell align="center">
+                          <Tooltip title="Remove item">
+                            <IconButton
+                              onClick={() => handleRemove(item.productId)}
+                              color="error"
+                              size="small"
+                            >
+                              <DeleteIcon />
+                            </IconButton>
+                          </Tooltip>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          </Paper>
 
           {/* Delivery Assignment */}
-          <GradientCard sx={{ mb: 4 }}>
-            <CardContent sx={{ p: 4 }}>
+          <Card elevation={1} sx={{ mb: 3 }}>
+            <CardContent sx={{ p: 3 }}>
               <Box display="flex" alignItems="center" mb={3}>
-                <Avatar sx={{ bgcolor: 'secondary.main', mr: 2 }}>
-                  <DeliveryIcon />
-                </Avatar>
-                <Typography variant="h5" fontWeight="bold">
-                  Delivery Assignment
+                <DeliveryIcon sx={{ color: 'primary.main', mr: 1 }} />
+                <Typography variant="h6" fontWeight="600">
+                  Delivery Details
                 </Typography>
               </Box>
 
-              <Grid container spacing={2}>
-                <Grid item xs={12} sm={6}>
-                  <FormControl fullWidth sx={{ minHeight: 48, minWidth: 300 }}>
-                    <InputLabel id="customer-label">Customer</InputLabel>
+              <Grid container spacing={3}>
+                <Grid item xs={12} md={6}>
+                  <FormControl fullWidth>
+                    <InputLabel>Customer</InputLabel>
                     <Select
-                      labelId="customer-label"
                       value={customerName}
                       label="Customer"
                       onChange={(e) => {
@@ -446,67 +388,39 @@ const Cart = () => {
                           setCustomerPhone(customer.contactNumber);
                         }
                       }}
-                      sx={{ borderRadius: 2, height: 48 }}
                     >
                       {customers.map((cust) => (
                         <MenuItem key={cust.customerId || cust.id} value={cust.customerName}>
-                          <Box display="flex" alignItems="center" gap={1}>
-                            <PersonIcon fontSize="small" />
-                            {cust.customerName}
-                          </Box>
+                          {cust.customerName}
                         </MenuItem>
                       ))}
                     </Select>
                   </FormControl>
                 </Grid>
 
-                <Grid item xs={12} sm={6}>
+                <Grid item xs={12} md={6}>
                   <TextField
                     fullWidth
                     label="Email"
                     value={customerEmail}
                     onChange={(e) => setCustomerEmail(e.target.value)}
-                    helperText={customerEmail && !/\S+@\S+\.\S+/.test(customerEmail) ? "Invalid email format" : ""}
                     error={customerEmail && !/\S+@\S+\.\S+/.test(customerEmail)}
-                    InputProps={{
-                      startAdornment: <EmailIcon sx={{ mr: 1, color: 'text.secondary' }} />
-                    }}
-                    sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2, height: 48 } }}
+                    helperText={customerEmail && !/\S+@\S+\.\S+/.test(customerEmail) ? "Invalid email format" : ""}
                   />
                 </Grid>
 
-                <Grid item xs={12} sm={6}>
+                <Grid item xs={12} md={6}>
                   <TextField
                     fullWidth
                     label="Phone"
                     value={customerPhone}
                     onChange={(e) => setCustomerPhone(e.target.value)}
-                    helperText={customerPhone && !/^\d{10}$/.test(customerPhone) ? "Enter a valid 10-digit phone number" : ""}
                     error={customerPhone && !/^\d{10}$/.test(customerPhone)}
-                    InputProps={{
-                      startAdornment: <PhoneIcon sx={{ mr: 1, color: 'text.secondary' }} />
-                    }}
-                    sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2, height: 48 } }}
+                    helperText={customerPhone && !/^\d{10}$/.test(customerPhone) ? "Enter a valid 10-digit phone number" : ""}
                   />
                 </Grid>
 
-                <Grid item xs={12}>
-                  <TextField
-                    fullWidth
-                    label="Address"
-                    value={address}
-                    onChange={(e) => setAddress(e.target.value)}
-                    multiline
-                    rows={2}
-                    helperText="Enter the delivery address"
-                    InputProps={{
-                      startAdornment: <LocationIcon sx={{ mr: 1, color: 'text.secondary', alignSelf: 'flex-start', mt: 1 }} />
-                    }}
-                    sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2, minHeight: 60 } }}
-                  />
-                </Grid>
-
-                <Grid item xs={12} sm={6}>
+                <Grid item xs={12} md={6}>
                   <TextField
                     fullWidth
                     label="Delivery Date"
@@ -515,29 +429,31 @@ const Cart = () => {
                     onChange={(e) => setDeliveryDate(e.target.value)}
                     InputLabelProps={{ shrink: true }}
                     inputProps={{ min: new Date().toISOString().split('T')[0] }}
-                    InputProps={{
-                      startAdornment: <DateIcon sx={{ mr: 1, color: 'text.secondary' }} />
-                    }}
-                    sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2, height: 48 } }}
                   />
                 </Grid>
 
-                <Grid item xs={12} sm={6}>
-                  <FormControl fullWidth sx={{ minHeight: 48, minWidth: 300 }}>
-                    <InputLabel id="agent-label">Delivery Agent</InputLabel>
+                <Grid item xs={12}>
+                  <TextField
+                    fullWidth
+                    label="Delivery Address"
+                    value={address}
+                    onChange={(e) => setAddress(e.target.value)}
+                    multiline
+                    rows={2}
+                  />
+                </Grid>
+
+                <Grid item xs={12} md={6}>
+                  <FormControl fullWidth>
+                    <InputLabel>Delivery Agent</InputLabel>
                     <Select
-                      labelId="agent-label"
                       value={agent}
                       label="Delivery Agent"
                       onChange={(e) => setAgent(e.target.value)}
-                      sx={{ borderRadius: 2, height: 48 }}
                     >
                       {deliveryAgents.map((d) => (
                         <MenuItem key={d.userId} value={d.userId}>
-                          <Box display="flex" alignItems="center" gap={1}>
-                            <DeliveryIcon fontSize="small" />
-                            {d.username}
-                          </Box>
+                          {d.username}
                         </MenuItem>
                       ))}
                     </Select>
@@ -545,55 +461,38 @@ const Cart = () => {
                 </Grid>
               </Grid>
             </CardContent>
-          </GradientCard>
+          </Card>
 
           {/* Checkout Section */}
-          <Paper 
-            elevation={0}
-            sx={{ 
-              p: 4, 
-              borderRadius: 8,
-              background: `linear-gradient(135deg, ${alpha(theme.palette.success.light, 0.1)} 0%, ${alpha(theme.palette.primary.light, 0.05)} 100%)`,
-              border: `1px solid ${alpha(theme.palette.success.main, 0.2)}`
-            }}
-          >
-            <Stack direction={{ xs: 'column', md: 'row' }} justifyContent="space-between" alignItems="center" spacing={3}>
+          <Paper elevation={1} sx={{ p: 3, bgcolor: 'grey.50' }}>
+            <Stack
+              direction={{ xs: 'column', md: 'row' }}
+              justifyContent="space-between"
+              alignItems="center"
+              spacing={2}
+            >
               <Box>
-                <Typography variant="h4" fontWeight="bold" color="success.main">
+                <Typography variant="h5" fontWeight="600" color="primary.main">
                   Total: ₹{subtotal.toFixed(2)}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
-                  Including all items in your cart
+                  {cart.length} items in cart
                 </Typography>
               </Box>
-              
+
               <Button
                 variant="contained"
                 size="large"
                 onClick={handleCheckout}
                 disabled={!customerName || !address || !deliveryDate || !agent || cart.length === 0 || isCheckoutLoading}
-                startIcon={<CheckIcon />}
-                sx={{ 
-                  px: 5, 
-                  py: 2.5, 
-                  borderRadius: 3,
-                  fontSize: '1.2rem',
-                  fontWeight: 'bold',
-                  textTransform: 'none',
-                  background: `linear-gradient(135deg, ${theme.palette.success.main} 0%, ${theme.palette.primary.main} 100%)`,
-                  '&:hover': {
-                    background: `linear-gradient(135deg, ${theme.palette.success.dark} 0%, ${theme.palette.primary.dark} 100%)`,
-                    transform: 'scale(1.05)',
-                    boxShadow: theme.shadows[12]
-                  },
-                  '&:disabled': {
-                    background: alpha(theme.palette.grey[500], 0.5),
-                    color: theme.palette.grey[300],
-                    boxShadow: 'none'
-                  }
+                startIcon={isCheckoutLoading ? <CircularProgress size={20} /> : <CheckIcon />}
+                sx={{
+                  px: 4,
+                  py: 1.5,
+                  minWidth: 160
                 }}
               >
-                {isCheckoutLoading ? <CircularProgress size={24} color="inherit" /> : 'Place Order'}
+                {isCheckoutLoading ? 'Processing...' : 'Assign Order'}
               </Button>
             </Stack>
           </Paper>
@@ -601,78 +500,79 @@ const Cart = () => {
       )}
 
       {/* Confirmation Dialog */}
-      <GlassmorphismDialog
+      <Dialog
         open={showModal}
         onClose={() => setShowModal(false)}
         maxWidth="sm"
         fullWidth
       >
-        <DialogTitle sx={{ textAlign: 'center', pb: 1 }}>
-        <Avatar sx={{ bgcolor: 'success.main', width: 64, height: 64, mx: 'auto', mb: 2 }}>
-            <CheckIcon fontSize="large" />
-          </Avatar>
-          <Typography variant="h5" fontWeight="bold">
-            Order Confirmation
-          </Typography>
+        <DialogTitle>
+          <Box display="flex" alignItems="center" gap={2}>
+            <CheckIcon color="success" />
+            <Typography variant="h6">Confirm Order</Typography>
+          </Box>
         </DialogTitle>
-        
-        <DialogContent sx={{ pt: 2 }}>
+
+        <DialogContent>
           <Stack spacing={2}>
             <Box display="flex" justifyContent="space-between">
-              <Typography variant="body1" fontWeight="medium">Customer:</Typography>
+              <Typography variant="body1" fontWeight="500">Customer:</Typography>
               <Typography variant="body1">{customerName}</Typography>
             </Box>
             <Divider />
             <Box display="flex" justifyContent="space-between">
-              <Typography variant="body1" fontWeight="medium">Agent:</Typography>
+              <Typography variant="body1" fontWeight="500">Agent:</Typography>
               <Typography variant="body1">
                 {deliveryAgents.find(a => a.userId == agent)?.username || agent}
               </Typography>
             </Box>
             <Divider />
             <Box display="flex" justifyContent="space-between">
-              <Typography variant="body1" fontWeight="medium">Delivery Date:</Typography>
+              <Typography variant="body1" fontWeight="500">Delivery Date:</Typography>
               <Typography variant="body1">{deliveryDate}</Typography>
             </Box>
             <Divider />
-            <Box display="flex" justifyContent="space-between">
-              <Typography variant="body1" fontWeight="medium">Address:</Typography>
+            <Box display="flex" justifyContent="space-between" alignItems="flex-start">
+              <Typography variant="body1" fontWeight="500">Address:</Typography>
               <Typography variant="body1" textAlign="right" sx={{ maxWidth: '60%' }}>
                 {address}
               </Typography>
             </Box>
             <Divider />
             <Box display="flex" justifyContent="space-between">
-              <Typography variant="h6" fontWeight="bold">Total:</Typography>
-              <Typography variant="h6" fontWeight="bold" color="success.main">
+              <Typography variant="h6" fontWeight="600">Total:</Typography>
+              <Typography variant="h6" fontWeight="600" color="success.main">
                 ₹{subtotal.toFixed(2)}
               </Typography>
             </Box>
           </Stack>
         </DialogContent>
-        
-        <DialogActions sx={{ p: 3, pt: 1 }}>
-          <Button 
+
+        <DialogActions sx={{ p: 3 }}>
+          <Button
             onClick={() => setShowModal(false)}
             variant="outlined"
-            sx={{ borderRadius: 2, px: 3 }}
           >
             Cancel
           </Button>
-          <Button 
+          <Button
             onClick={handleConfirmOrder}
             variant="contained"
             disabled={isCheckoutLoading}
-            sx={{ 
-              borderRadius: 2, 
-              px: 3,
-              background: `linear-gradient(135deg, ${theme.palette.success.main} 0%, ${theme.palette.success.dark} 100%)`,
-            }}
+            startIcon={isCheckoutLoading ? <CircularProgress size={16} /> : null}
           >
-            {isCheckoutLoading ? <CircularProgress size={24} color="inherit" /> : 'Confirm Order'}
+            {isCheckoutLoading ? 'Processing...' : 'Confirm Order'}
           </Button>
         </DialogActions>
-      </GlassmorphismDialog>
+      </Dialog>
+
+      {/* Add ToastContainer for react-toastify */}
+      <ToastContainer
+        position="top-right"
+        autoClose={3000}
+        style={{ top: '80px' }} // Adjusts the top position to avoid overlapping with the header
+        toastStyle={{ zIndex: 10000 }} // Ensures the toast is above the header
+      />
     </Container>
   );
 };

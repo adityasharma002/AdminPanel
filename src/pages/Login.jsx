@@ -111,7 +111,7 @@ const Login = () => {
           )}
           <Box
             component="form"
- intending           onSubmit={handleLogin}
+            onSubmit={handleLogin}
             sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}
           >
             <TextField
@@ -189,24 +189,7 @@ const Login = () => {
               {loading ? 'Logging in...' : 'Login'}
             </Button>
           </Box>
-          <Typography
-            variant="body2"
-            align="center"
-            sx={{ mt: 3, color: 'rgba(0, 0, 0, 0.7)' }}
-          >
-            Don't have an account?{' '}
-            <a
-              href="/register"
-              style={{
-                color: '#3b82f6',
-                textDecoration: 'none',
-                fontWeight: 500,
-                '&:hover': { textDecoration: 'underline' },
-              }}
-            >
-              Register
-            </a>
-          </Typography>
+
         </Box>
       </Card>
     </Box>

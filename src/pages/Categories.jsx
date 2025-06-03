@@ -14,7 +14,7 @@ import {
 import { styled } from '@mui/material/styles';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import CardDesign from '../components/CardDesign'; // Adjust the import path as necessary
+import CardDesign from '../components/CardDesign';
 
 const API_BASE = 'https://logistic-project-backend.onrender.com/api/categories';
 
@@ -38,32 +38,40 @@ const HeaderContainer = styled(Box)(({ theme }) => ({
 }));
 
 const SearchBar = styled(TextField)(({ theme }) => ({
-  maxWidth: '400px',
+  maxWidth: '600px',
   width: '100%',
   '& .MuiOutlinedInput-root': {
-    borderRadius: '8px',
-    backgroundColor: theme.palette.grey[50],
-    borderColor: theme.palette.grey[200],
+    borderRadius: '12px',
+    backgroundColor: theme.palette.background.paper,
+    borderColor: theme.palette.grey[300],
+    boxShadow: '0 2px 4px rgba(0, 0, 0, 0.05)',
     transition: 'all 0.3s ease',
     '&:hover': {
-      backgroundColor: theme.palette.grey[100],
-      borderColor: theme.palette.grey[300],
+      backgroundColor: theme.palette.grey[50],
+      borderColor: theme.palette.grey[400],
+      boxShadow: '0 4px 8px rgba(0, 0, 0, 0.1)',
     },
     '&.Mui-focused': {
       backgroundColor: theme.palette.common.white,
       borderColor: theme.palette.primary.main,
-      boxShadow: `0 0 0 2px ${alpha(theme.palette.primary.main, 0.2)}`,
+      boxShadow: `0 0 0 3px ${alpha(theme.palette.primary.main, 0.15)}`,
     },
   },
   '& .MuiOutlinedInput-input': {
-    padding: theme.spacing(1.5),
-    fontSize: '14px',
+    padding: theme.spacing(1.75),
+    fontSize: '15px',
   },
   '& .MuiInputLabel-outlined': {
-    fontSize: '14px',
-    transform: 'translate(14px, 12px) scale(1)',
+    fontSize: '15px',
+    transform: 'translate(14px, 14px) scale(1)',
     '&.MuiInputLabel-shrink': {
-      transform: 'translate(14px, -6px) scale(0.75)',
+      transform: 'translate(14px, -8px) scale(0.75)',
+    },
+  },
+  '& .MuiInputAdornment-root': {
+    transition: 'transform 0.2s ease',
+    '&:hover': {
+      transform: 'scale(1.1)',
     },
   },
 }));
@@ -164,7 +172,7 @@ const Categories = () => {
   const theme = useTheme();
   const navigate = useNavigate();
   const [categories, setCategories] = useState([]);
-  const [searchTerm, setSearchTerm] = useState(''); // State for search term
+  const [searchTerm, setSearchTerm] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [categoryName, setCategoryName] = useState('');
   const [selectedImage, setSelectedImage] = useState(null);
@@ -184,7 +192,7 @@ const Categories = () => {
         imageUrl: category.imageUrl
       }));
       setCategories(categoriesData);
-      setSearchTerm(''); // Reset search term when categories change
+      setSearchTerm('');
     } catch (error) {
       console.error("Error fetching categories:", error);
     } finally {
@@ -196,7 +204,6 @@ const Categories = () => {
     fetchCategories();
   }, []);
 
-  // Filter categories based on search term
   const filteredCategories = categories.filter((cat) =>
     cat.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -318,7 +325,6 @@ const Categories = () => {
 
   return (
     <PageContainer maxWidth="xl">
-      {/* Header */}
       <HeaderContainer>
         <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 2 }}>
           <Box>
@@ -375,14 +381,12 @@ const Categories = () => {
         </PrimaryButton>
       </HeaderContainer>
 
-      {/* Loader */}
       {loading && (
         <LoaderContainer>
           <CircularProgress size={60} thickness={4} />
         </LoaderContainer>
       )}
 
-      {/* Stats Bar */}
       {!loading && filteredCategories.length > 0 && (
         <Box sx={{ mb: 4 }}>
           <Chip
@@ -398,7 +402,6 @@ const Categories = () => {
         </Box>
       )}
 
-      {/* Empty State */}
       {!loading && filteredCategories.length === 0 && (
         <EmptyStateContainer>
           <CategoryIcon sx={{ fontSize: 48, color: 'grey.400', mb: 2 }} />
@@ -426,7 +429,6 @@ const Categories = () => {
         </EmptyStateContainer>
       )}
 
-      {/* Categories Grid */}
       {!loading && filteredCategories.length > 0 && (
         <Grid container spacing={3} justifyContent="center">
           {filteredCategories.map((cat) => (
@@ -434,7 +436,7 @@ const Categories = () => {
               <CardDesign
                 imageUrl={cat.imageUrl}
                 placeholderText="No Image"
-                placeholderIcon={<ImageIcon sx={{ fontSize: 40, mb: 1 }} />}
+                placeholderIcon={<ImageIcon sx={{ fontSize: 36, mb: 1 }} />}
                 actions={
                   <>
                     <Typography variant="caption" color="text.secondary">
@@ -470,14 +472,14 @@ const Categories = () => {
                   </>
                 }
               >
-                <CardContent sx={{ p: 2.5 }}>
+                <CardContent sx={{ p: 2 }}>
                   <Typography
                     variant="h6"
-                    fontWeight="600"
+                    fontWeight="500"
                     color="text.primary"
                     sx={{
                       mb: 0.5,
-                      fontSize: '16px',
+                      fontSize: '15px',
                       overflow: 'hidden',
                       textOverflow: 'ellipsis',
                       whiteSpace: 'nowrap'
@@ -488,7 +490,7 @@ const Categories = () => {
                   <Typography
                     variant="body2"
                     color="text.secondary"
-                    sx={{ fontSize: '13px', mb: 2, overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}
+                    sx={{ fontSize: '12px', mb: 1.5 }}
                   >
                     Product category
                   </Typography>
@@ -506,7 +508,6 @@ const Categories = () => {
         </Grid>
       )}
 
-      {/* Add/Edit Category Modal */}
       <StyledDialog
         open={showModal}
         onClose={handleModalClose}

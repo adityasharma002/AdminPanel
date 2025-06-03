@@ -7,21 +7,20 @@ import { Image as ImageIcon } from '@mui/icons-material';
 const StyledCard = styled(Card)(({ theme }) => ({
   borderRadius: '12px',
   border: `1px solid ${theme.palette.grey[200]}`,
-  width: '285px', // Fixed width for all cards
-  height: '320px', // Fixed height for all cards
+  width: '300px',
+  height: '360px',
   display: 'flex',
   flexDirection: 'column',
   transition: 'all 0.3s ease',
   '&:hover': {
     transform: 'translateY(-4px)',
-    boxShadow: '0 8px 24px rgba(0, 0, 0, 0.1)',
+    boxShadow: '0 8px 24px rgba(0, 0, 0, 0.15)',
   },
 }));
 
 const ImageContainer = styled(Box)(({ theme }) => ({
-  width: '256px', // Fixed width for the image area
-  height: '160px', // Fixed height for the image area
-  margin: '0 auto', // Center the image area within the card
+  width: '100%',
+  height: '200px',
   overflow: 'hidden',
   position: 'relative',
   backgroundColor: theme.palette.grey[100],
@@ -30,7 +29,7 @@ const ImageContainer = styled(Box)(({ theme }) => ({
 const StyledImage = styled('img')({
   width: '100%',
   height: '100%',
-  objectFit: 'cover', // Crop the image to fit the fixed area
+  objectFit: 'cover',
   objectPosition: 'center',
   display: 'block',
 });
@@ -48,20 +47,20 @@ const PlaceholderContainer = styled(Box)(({ theme }) => ({
 
 const ContentContainer = styled(CardContent)(({ theme }) => ({
   flexGrow: 1,
-  padding: theme.spacing(2),
+  padding: theme.spacing(1.5),
   paddingBottom: theme.spacing(1),
-  height: '96px', // Fixed height for content (320px - 160px image - 64px actions)
   overflow: 'hidden',
   display: 'flex',
   flexDirection: 'column',
+  gap: theme.spacing(0.5),
 }));
 
 const ActionContainer = styled(Box)(({ theme }) => ({
-  height: '64px', // Fixed height for actions
+  height: '56px',
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'space-between',
-  padding: theme.spacing(1, 2),
+  padding: theme.spacing(0.5, 1.5),
   borderTop: `1px solid ${theme.palette.grey[200]}`,
   backgroundColor: theme.palette.grey[50],
 }));
@@ -70,13 +69,12 @@ const CardDesign = ({
   imageUrl,
   placeholderText = 'No Image',
   placeholderIcon,
-  imageHeight = '400px', 
   actions,
   children,
 }) => {
   return (
     <StyledCard>
-      <ImageContainer sx={{ height: imageHeight }}>
+      <ImageContainer>
         {imageUrl ? (
           <StyledImage src={imageUrl} alt="Card Image" />
         ) : (
