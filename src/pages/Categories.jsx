@@ -13,6 +13,8 @@ import {
 } from '@mui/icons-material';
 import { styled } from '@mui/material/styles';
 import { useNavigate } from 'react-router-dom';
+import { ToastContainer, toast } from 'react-toastify'; // Added react-toastify imports
+import 'react-toastify/dist/ReactToastify.css'; // Added CSS import for react-toastify
 import axios from 'axios';
 import CardDesign from '../components/CardDesign';
 
@@ -181,24 +183,30 @@ const Categories = () => {
   const [editCategoryId, setEditCategoryId] = useState(null);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false); // Added for delete confirmation dialog
+  const [categoryToDelete, setCategoryToDelete] = useState(null); // Added to store category to delete
 
   const fetchCategories = async () => {
-    try {
-      setLoading(true);
-      const response = await axios.get(API_BASE);
-      const categoriesData = response.data.map(category => ({
-        id: category.categoryId,
-        name: category.categoryName,
-        imageUrl: category.imageUrl
-      }));
-      setCategories(categoriesData);
-      setSearchTerm('');
-    } catch (error) {
-      console.error("Error fetching categories:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  try {
+    setLoading(true);
+    const response = await axios.get(API_BASE);
+    const categoriesData = response.data.map(category => ({
+      id: category.categoryId,
+      name: category.categoryName,
+      imageUrl: category.imageUrl ? `${category.imageUrl}?t=${new Date().getTime()}` : ''
+    }));
+    setCategories(categoriesData);
+    setSearchTerm('');
+  } catch (error) {
+    console.error("Error fetching categories:", error);
+    toast.error('Failed to fetch categories. Please try again.', {
+      position: 'top-center',
+      autoClose: 3000,
+    });
+  } finally {
+    setLoading(false);
+  }
+};
 
   useEffect(() => {
     fetchCategories();
@@ -215,6 +223,10 @@ const Categories = () => {
       const reader = new FileReader();
       reader.onload = (e) => setPreviewUrl(e.target.result);
       reader.readAsDataURL(file);
+      toast.info('Image selected successfully!', {
+        position: 'top-center',
+        autoClose: 3000,
+      });
     }
   };
 
@@ -226,6 +238,10 @@ const Categories = () => {
       const reader = new FileReader();
       reader.onload = (e) => setPreviewUrl(e.target.result);
       reader.readAsDataURL(file);
+      toast.info('Image dropped successfully!', {
+        position: 'top-center',
+        autoClose: 3000,
+      });
     }
   };
 
@@ -240,7 +256,13 @@ const Categories = () => {
   };
 
   const handleSaveCategory = async () => {
-    if (!categoryName.trim()) return;
+    if (!categoryName.trim()) {
+      toast.error('Please enter a category name.', {
+        position: 'top-center',
+        autoClose: 3000,
+      });
+      return;
+    }
 
     try {
       setUploading(true);
@@ -262,11 +284,17 @@ const Categories = () => {
               ? { 
                   ...cat, 
                   name: categoryName,
-                  imageUrl: response.data.imageUrl || cat.imageUrl
+                  imageUrl: response.data.imageUrl ? `${response.data.imageUrl}?t=${new Date().getTime()}` : cat.imageUrl
                 } 
               : cat
           )
         );
+        // Refresh categories to ensure latest data
+        await fetchCategories();
+        toast.success('Category updated successfully!', {
+          position: 'top-center',
+          autoClose: 3000,
+        });
       } else {
         const response = await axios.post(`${API_BASE}/category`, formData, {
           headers: { 'Content-Type': 'multipart/form-data' }
@@ -275,27 +303,49 @@ const Categories = () => {
         const newCategory = {
           id: response.data.categoryId,
           name: response.data.categoryName,
-          imageUrl: response.data.imageUrl
+          imageUrl: response.data.imageUrl ? `${response.data.imageUrl}?t=${new Date().getTime()}` : ''
         };
         setCategories(prev => [...prev, newCategory]);
+        toast.success('Category created successfully!', {
+          position: 'top-center',
+          autoClose: 3000,
+        });
       }
       
       handleModalClose();
     } catch (err) {
       console.error('Error saving category:', err);
-      alert(`Error saving category: ${err.response?.data?.message || err.message || 'Unknown error'}`);
+      toast.error(`Error saving category: ${err.response?.data?.message || err.message || 'Unknown error'}`, {
+        position: 'top-center',
+        autoClose: 3000,
+      });
     } finally {
       setUploading(false);
     }
   };
 
-  const handleDelete = async (id) => {
+  const handleDelete = (id) => {
+    setCategoryToDelete(id);
+    setDeleteConfirmOpen(true);
+  };
+
+  const confirmDelete = async () => {
     try {
-      await axios.delete(`${API_BASE}/${id}`);
-      setCategories(categories.filter(cat => cat.id !== id));
+      await axios.delete(`${API_BASE}/${categoryToDelete}`);
+      setCategories(categories.filter(cat => cat.id !== categoryToDelete));
+      setDeleteConfirmOpen(false);
+      setCategoryToDelete(null);
+      toast.success('Category deleted successfully!', {
+        position: 'top-center',
+        autoClose: 3000,
+      });
     } catch (err) {
       console.error('Error deleting category:', err);
-      alert('Error deleting category. Please try again.');
+      setDeleteConfirmOpen(false);
+      toast.error('Error deleting category. Please try again.', {
+        position: 'top-center',
+        autoClose: 3000,
+      });
     }
   };
 
@@ -312,6 +362,10 @@ const Categories = () => {
     navigate(`/products/${categoryId}`, {
       state: { id: categoryId, name: categoryName }
     });
+    toast.info(`Viewing products for category "${categoryName}"`, {
+      position: 'top-center',
+      autoClose: 3000,
+    });
   };
 
   const handleEditCategory = (category) => {
@@ -321,6 +375,10 @@ const Categories = () => {
     setPreviewUrl(category.imageUrl || '');
     setSelectedImage(null);
     setShowModal(true);
+    toast.info(`Editing category "${category.name}"`, {
+      position: 'top-center',
+      autoClose: 3000,
+    });
   };
 
   return (
@@ -374,6 +432,10 @@ const Categories = () => {
             setSelectedImage(null);
             setPreviewUrl('');
             setShowModal(true);
+            toast.info('Opening form to add a new category', {
+              position: 'top-center',
+              autoClose: 3000,
+            });
           }}
           sx={{ minWidth: '140px', flexShrink: 0 }}
         >
@@ -421,6 +483,10 @@ const Categories = () => {
                 setSelectedImage(null);
                 setPreviewUrl('');
                 setShowModal(true);
+                toast.info('Opening form to add a new category', {
+                  position: 'top-center',
+                  autoClose: 3000,
+                });
               }}
             >
               Create Category
@@ -454,9 +520,7 @@ const Categories = () => {
                       <ActionIconButton
                         onClick={(e) => {
                           e.stopPropagation();
-                          if (window.confirm(`Delete "${cat.name}"?`)) {
-                            handleDelete(cat.id);
-                          }
+                          handleDelete(cat.id);
                         }}
                         sx={{
                           '&:hover': {
@@ -607,6 +671,61 @@ const Categories = () => {
           </PrimaryButton>
         </DialogActions>
       </StyledDialog>
+
+      <StyledDialog
+        open={deleteConfirmOpen}
+        onClose={() => setDeleteConfirmOpen(false)}
+        maxWidth="xs"
+        fullWidth
+      >
+        <DialogTitle sx={{ pb: 1 }}>
+          <Stack direction="row" alignItems="center" justifyContent="space-between">
+            <Typography variant="h6" fontWeight="500">
+              Confirm Deletion
+            </Typography>
+            <IconButton
+              onClick={() => setDeleteConfirmOpen(false)}
+              size="small"
+              sx={{ color: 'grey.500' }}
+            >
+              <CloseIcon />
+            </IconButton>
+          </Stack>
+        </DialogTitle>
+        <DialogContent sx={{ pt: 2 }}>
+          <Typography variant="body1" color="text.primary">
+            Are you sure you want to delete this category? This action cannot be undone.
+          </Typography>
+        </DialogContent>
+        <DialogActions sx={{ p: 3, pt: 2, gap: 1 }}>
+          <Button
+            onClick={() => setDeleteConfirmOpen(false)}
+            variant="outlined"
+            sx={{
+              textTransform: 'none',
+              borderRadius: '8px',
+              borderColor: 'grey.300',
+              color: 'text.primary',
+            }}
+          >
+            Cancel
+          </Button>
+          <PrimaryButton
+            onClick={confirmDelete}
+            variant="contained"
+            color="error"
+          >
+            Delete
+          </PrimaryButton>
+        </DialogActions>
+      </StyledDialog>
+
+      <ToastContainer
+        position="top-center"
+        autoClose={3000}
+        style={{ top: '80px' }}
+        toastStyle={{ zIndex: 10000 }}
+      />
     </PageContainer>
   );
 };

@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { useLocation, useParams } from 'react-router-dom';
 import {
-  Box, Container,Card, Typography, Button, CardContent, Grid,
+  Box, Container, Card, Typography, Button, CardContent, Grid,
   Dialog, DialogTitle, DialogContent, DialogActions, TextField, IconButton,
-  Chip, Paper, Stack, useTheme, alpha, CircularProgress, InputAdornment
+  Chip, Paper, Stack, useTheme, alpha, CircularProgress, InputAdornment, MenuItem, Select
 } from '@mui/material';
 import {
   Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon, ShoppingCart as ShoppingCartIcon,
@@ -11,9 +11,14 @@ import {
   Inventory as ProductIcon, Image as ImageIcon, Search as SearchIcon, Clear as ClearIcon
 } from '@mui/icons-material';
 import { styled } from '@mui/material/styles';
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import useCartStore from '../store/useCartStore';
 import useProductStore from '../store/productStore';
 import CardDesign from '../components/CardDesign';
+import axios from 'axios';
+
+const API_BASE = 'https://logistic-project-backend.onrender.com/api';
 
 const PageContainer = styled(Container)(({ theme }) => ({
   paddingTop: theme.spacing(3),
@@ -146,17 +151,19 @@ const Products = () => {
   const { categoryId } = useParams();
   const location = useLocation();
   const isAllProductsPage = !categoryId;
-
   const [showModal, setShowModal] = useState(false);
   const [productName, setProductName] = useState('');
   const [description, setDescription] = useState('');
   const [price, setPrice] = useState('');
   const [image, setImage] = useState(null);
+  const [selectedCategory, setSelectedCategory] = useState('');
+  const [categories, setCategories] = useState([]);
   const [editProductId, setEditProductId] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
   const [uploading, setUploading] = useState(false);
-  const [searchTerm, setSearchTerm] = useState(''); // State for search term
-
+  const [searchTerm, setSearchTerm] = useState('');
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [productToDelete, setProductToDelete] = useState(null);
   const { products, fetchProducts, fetchProductById, deleteProduct, saveProduct, loading } = useProductStore();
   const cart = useCartStore((state) => state.cart);
   const addToCart = useCartStore((state) => state.addToCart);
@@ -165,10 +172,24 @@ const Products = () => {
 
   useEffect(() => {
     fetchProducts(categoryId);
-    setSearchTerm(''); // Reset search term when products change
+    setSearchTerm('');
   }, [categoryId, fetchProducts]);
 
-  // Filter products based on search term
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const res = await axios.get(`${API_BASE}/categories`);
+        setCategories(res.data);
+      } catch (error) {
+        console.error('Error fetching categories:', error);
+      }
+    };
+
+    if (isAllProductsPage) {
+      fetchCategories();
+    }
+  }, [isAllProductsPage]);
+
   const filteredProducts = products.filter((product) =>
     product.productName.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -191,13 +212,31 @@ const Products = () => {
     else await updateQuantity(productId, delta);
   };
 
-  const handleDelete = async (id) => {
-    if (window.confirm('Are you sure you want to delete this product?')) {
-      try {
-        await deleteProduct(id);
-      } catch (err) {
-        alert('Failed to delete product. Please try again.');
-      }
+  const handleDelete = (id) => {
+    setProductToDelete(id);
+    setDeleteConfirmOpen(true);
+    const product = products.find((p) => p.productId === id);
+    toast.info(`Preparing to delete product "${product.productName}"`, {
+      position: 'top-center',
+      autoClose: 3000,
+    });
+  };
+
+  const confirmDelete = async () => {
+    try {
+      await deleteProduct(productToDelete);
+      setDeleteConfirmOpen(false);
+      setProductToDelete(null);
+      toast.success('Product deleted successfully!', {
+        position: 'top-center',
+        autoClose: 3000,
+      });
+    } catch (err) {
+      setDeleteConfirmOpen(false);
+      toast.error('Failed to delete product. Please try again.', {
+        position: 'top-center',
+        autoClose: 3000,
+      });
     }
   };
 
@@ -209,15 +248,38 @@ const Products = () => {
       setProductName(product.productName);
       setDescription(product.description);
       setPrice(product.price);
+      // Only set selectedCategory if we're on the all products page
+      if (isAllProductsPage) {
+        setSelectedCategory(product.categoryId);
+      }
       setImage(null);
       setShowModal(true);
+      toast.info(`Editing product "${product.productName}"`, {
+        position: 'top-center',
+        autoClose: 3000,
+      });
     } catch (err) {
-      alert('Failed to fetch product details. Please try again.');
+      toast.error('Failed to fetch product details. Please try again.', {
+        position: 'top-center',
+        autoClose: 3000,
+      });
     }
   };
 
   const handleSave = async () => {
-    if (!productName.trim() || !description.trim() || !price) return;
+    // Validation - category is only required for all products page
+    const requiredFields = [productName.trim(), description.trim(), price];
+    if (isAllProductsPage) {
+      requiredFields.push(selectedCategory);
+    }
+    
+    if (requiredFields.some(field => !field)) {
+      toast.error('Please fill in all required fields.', {
+        position: 'top-center',
+        autoClose: 3000,
+      });
+      return;
+    }
 
     try {
       setUploading(true);
@@ -225,7 +287,8 @@ const Products = () => {
         productName,
         description,
         price: parseFloat(price),
-        categoryId,
+        // Use current categoryId if not on all products page, otherwise use selected category
+        categoryId: isAllProductsPage ? parseInt(selectedCategory) : parseInt(categoryId),
         image,
         isEditing,
         editProductId,
@@ -235,10 +298,18 @@ const Products = () => {
       setDescription('');
       setPrice('');
       setImage(null);
+      setSelectedCategory('');
       setEditProductId(null);
       setIsEditing(false);
+      toast.success(isEditing ? 'Product updated successfully!' : 'Product added successfully!', {
+        position: 'top-center',
+        autoClose: 3000,
+      });
     } catch (err) {
-      alert('Failed to save product. Please try again.');
+      toast.error('Failed to save product. Please try again.', {
+        position: 'top-center',
+        autoClose: 3000,
+      });
     } finally {
       setUploading(false);
     }
@@ -250,6 +321,7 @@ const Products = () => {
     setDescription('');
     setPrice('');
     setImage(null);
+    setSelectedCategory('');
     setEditProductId(null);
     setIsEditing(false);
     setUploading(false);
@@ -262,9 +334,18 @@ const Products = () => {
     }
   };
 
+  const openAddProductModal = () => {
+    setIsEditing(false);
+    setProductName('');
+    setDescription('');
+    setPrice('');
+    setImage(null);
+    setSelectedCategory('');
+    setShowModal(true);
+  };
+
   return (
     <PageContainer maxWidth="xl">
-      {/* Header */}
       <HeaderContainer>
         <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 2 }}>
           <Box>
@@ -307,33 +388,22 @@ const Products = () => {
             }}
           />
         </Box>
-        {!isAllProductsPage && (
-          <PrimaryButton
-            variant="contained"
-            startIcon={<AddIcon />}
-            onClick={() => {
-              setIsEditing(false);
-              setProductName('');
-              setDescription('');
-              setPrice('');
-              setImage(null);
-              setShowModal(true);
-            }}
-            sx={{ minWidth: '140px', flexShrink: 0 }}
-          >
-            Add Product
-          </PrimaryButton>
-        )}
+        <PrimaryButton
+          variant="contained"
+          startIcon={<AddIcon />}
+          onClick={openAddProductModal}
+          sx={{ minWidth: '140px', flexShrink: 0 }}
+        >
+          Add Product
+        </PrimaryButton>
       </HeaderContainer>
 
-      {/* Loader */}
       {loading && (
         <LoaderContainer>
           <CircularProgress size={60} thickness={4} />
         </LoaderContainer>
       )}
 
-      {/* Stats Bar */}
       {!loading && filteredProducts.length > 0 && (
         <Box sx={{ mb: 4 }}>
           <Chip
@@ -349,7 +419,6 @@ const Products = () => {
         </Box>
       )}
 
-      {/* Empty State */}
       {!loading && filteredProducts.length === 0 && (
         <EmptyStateContainer>
           <ProductIcon sx={{ fontSize: 48, color: 'grey.400', mb: 2 }} />
@@ -359,30 +428,18 @@ const Products = () => {
           <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
             {searchTerm
               ? 'Try a different search term'
-              : isAllProductsPage
-              ? 'Start adding products to see them here.'
-              : 'This category is empty. Add some products to get started!'}
+              : 'Start adding products to see them here.'}
           </Typography>
-          {!isAllProductsPage && !searchTerm && (
-            <PrimaryButton
-              variant="contained"
-              startIcon={<AddIcon />}
-              onClick={() => {
-                setIsEditing(false);
-                setProductName('');
-                setDescription('');
-                setPrice('');
-                setImage(null);
-                setShowModal(true);
-              }}
-            >
-              Add Product
-            </PrimaryButton>
-          )}
+          <PrimaryButton
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={openAddProductModal}
+          >
+            Add Product
+          </PrimaryButton>
         </EmptyStateContainer>
       )}
 
-      {/* Products Grid */}
       {!loading && filteredProducts.length > 0 && (
         <Grid container spacing={3} justifyContent="center">
           {filteredProducts.map((product) => (
@@ -412,11 +469,11 @@ const Products = () => {
                           >
                             <RemoveIcon fontSize="small" />
                           </QuantityButton>
-                          <Typography 
-                            variant="body2" 
+                          <Typography
+                            variant="body2"
                             fontWeight="medium"
-                            sx={{ 
-                              minWidth: '24px', 
+                            sx={{
+                              minWidth: '24px',
                               textAlign: 'center',
                               background: theme.palette.grey[100],
                               borderRadius: '6px',
@@ -435,33 +492,31 @@ const Products = () => {
                         </Stack>
                       )}
                     </Box>
-                    {!isAllProductsPage && (
-                      <Stack direction="row" spacing={1}>
-                        <ActionIconButton
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleEdit(product.productId);
-                          }}
-                        >
-                          <EditIcon sx={{ fontSize: '16px' }} />
-                        </ActionIconButton>
-                        <ActionIconButton
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDelete(product.productId);
-                          }}
-                          sx={{
-                            '&:hover': {
-                              backgroundColor: alpha(theme.palette.error.main, 0.1),
-                              borderColor: theme.palette.error.main,
-                              color: theme.palette.error.main,
-                            }
-                          }}
-                        >
-                          <DeleteIcon sx={{ fontSize: '16px' }} />
-                        </ActionIconButton>
-                      </Stack>
-                    )}
+                    <Stack direction="row" spacing={1}>
+                      <ActionIconButton
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleEdit(product.productId);
+                        }}
+                      >
+                        <EditIcon sx={{ fontSize: '16px' }} />
+                      </ActionIconButton>
+                      <ActionIconButton
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDelete(product.productId);
+                        }}
+                        sx={{
+                          '&:hover': {
+                            backgroundColor: alpha(theme.palette.error.main, 0.1),
+                            borderColor: theme.palette.error.main,
+                            color: theme.palette.error.main,
+                          }
+                        }}
+                      >
+                        <DeleteIcon sx={{ fontSize: '16px' }} />
+                      </ActionIconButton>
+                    </Stack>
                   </>
                 }
               >
@@ -511,7 +566,6 @@ const Products = () => {
         </Grid>
       )}
 
-      {/* Add/Edit Product Modal */}
       <StyledDialog
         open={showModal}
         onClose={handleModalClose}
@@ -532,7 +586,6 @@ const Products = () => {
             </IconButton>
           </Stack>
         </DialogTitle>
-        
         <DialogContent sx={{ pt: 2 }}>
           <TextField
             fullWidth
@@ -579,6 +632,40 @@ const Products = () => {
               }
             }}
           />
+          {/* Only show category selection on all products page */}
+          {isAllProductsPage && (
+            <Select
+              fullWidth
+              value={selectedCategory}
+              onChange={(e) => setSelectedCategory(e.target.value)}
+              displayEmpty
+              variant="outlined"
+              sx={{
+                mb: 3,
+                borderRadius: '8px',
+              }}
+            >
+              <MenuItem value="" disabled>
+                Select Category
+              </MenuItem>
+              {categories.map((category) => (
+                <MenuItem key={category.categoryId} value={category.categoryId}>
+                  {category.categoryName}
+                </MenuItem>
+              ))}
+            </Select>
+          )}
+          {/* Show current category info when on category page */}
+          {!isAllProductsPage && (
+            <Box sx={{ mb: 3, p: 2, bgcolor: 'grey.50', borderRadius: '8px' }}>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
+                Category
+              </Typography>
+              <Typography variant="body1" fontWeight="500">
+                {location.state?.name || 'Current Category'}
+              </Typography>
+            </Box>
+          )}
           <Typography variant="subtitle2" color="text.primary" sx={{ mb: 2 }}>
             Product Image
           </Typography>
@@ -613,7 +700,6 @@ const Products = () => {
             </Typography>
           </Box>
         </DialogContent>
-
         <DialogActions sx={{ p: 3, pt: 2, gap: 1 }}>
           <Button
             onClick={handleModalClose}
@@ -631,12 +717,73 @@ const Products = () => {
           <PrimaryButton
             onClick={handleSave}
             variant="contained"
-            disabled={!productName || !description || !price || uploading}
+            disabled={
+              !productName || 
+              !description || 
+              !price || 
+              (isAllProductsPage && !selectedCategory) || 
+              uploading
+            }
           >
             {uploading ? 'Saving...' : (isEditing ? 'Update' : 'Add')}
           </PrimaryButton>
         </DialogActions>
       </StyledDialog>
+
+      <StyledDialog
+        open={deleteConfirmOpen}
+        onClose={() => setDeleteConfirmOpen(false)}
+        maxWidth="xs"
+        fullWidth
+      >
+        <DialogTitle sx={{ pb: 1 }}>
+          <Stack direction="row" alignItems="center" justifyContent="space-between">
+            <Typography variant="h6" fontWeight="500">
+              Confirm Deletion
+            </Typography>
+            <IconButton
+              onClick={() => setDeleteConfirmOpen(false)}
+              size="small"
+              sx={{ color: 'grey.500' }}
+            >
+              <CloseIcon />
+            </IconButton>
+          </Stack>
+        </DialogTitle>
+        <DialogContent sx={{ pt: 2 }}>
+          <Typography variant="body1" color="text.primary">
+            Are you sure you want to delete this product? This action cannot be undone.
+          </Typography>
+        </DialogContent>
+        <DialogActions sx={{ p: 3, pt: 2, gap: 1 }}>
+          <Button
+            onClick={() => setDeleteConfirmOpen(false)}
+            variant="outlined"
+            sx={{
+              textTransform: 'none',
+              borderRadius: '8px',
+              borderColor: 'grey.300',
+              color: 'text.primary',
+            }}
+          >
+            Cancel
+          </Button>
+          <PrimaryButton
+            onClick={confirmDelete}
+            variant="contained"
+            color="error"
+          >
+            Delete
+          </PrimaryButton>
+        </DialogActions>
+      </StyledDialog>
+
+      <ToastContainer
+        position="top-center"
+        autoClose={3000}
+        style={{ top: '80px' }}
+        toastStyle={{ zIndex: 10000 }}
+      />
     </PageContainer>
   );
 };
