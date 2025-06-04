@@ -13,8 +13,8 @@ import {
 } from '@mui/icons-material';
 import { styled } from '@mui/material/styles';
 import { useNavigate } from 'react-router-dom';
-import { ToastContainer, toast } from 'react-toastify'; // Added react-toastify imports
-import 'react-toastify/dist/ReactToastify.css'; // Added CSS import for react-toastify
+import { ToastContainer, toast } from 'react-toastify'; 
+import 'react-toastify/dist/ReactToastify.css'; 
 import axios from 'axios';
 import CardDesign from '../components/CardDesign';
 
@@ -200,7 +200,7 @@ const Categories = () => {
   } catch (error) {
     console.error("Error fetching categories:", error);
     toast.error('Failed to fetch categories. Please try again.', {
-      position: 'top-center',
+      position: 'top-right',
       autoClose: 3000,
     });
   } finally {
@@ -224,7 +224,7 @@ const Categories = () => {
       reader.onload = (e) => setPreviewUrl(e.target.result);
       reader.readAsDataURL(file);
       toast.info('Image selected successfully!', {
-        position: 'top-center',
+        position: 'top-right',
         autoClose: 3000,
       });
     }
@@ -239,7 +239,7 @@ const Categories = () => {
       reader.onload = (e) => setPreviewUrl(e.target.result);
       reader.readAsDataURL(file);
       toast.info('Image dropped successfully!', {
-        position: 'top-center',
+        position: 'top-right',
         autoClose: 3000,
       });
     }
@@ -258,7 +258,7 @@ const Categories = () => {
   const handleSaveCategory = async () => {
     if (!categoryName.trim()) {
       toast.error('Please enter a category name.', {
-        position: 'top-center',
+        position: 'top-right',
         autoClose: 3000,
       });
       return;
@@ -292,7 +292,7 @@ const Categories = () => {
         // Refresh categories to ensure latest data
         await fetchCategories();
         toast.success('Category updated successfully!', {
-          position: 'top-center',
+          position: 'top-right',
           autoClose: 3000,
         });
       } else {
@@ -307,7 +307,7 @@ const Categories = () => {
         };
         setCategories(prev => [...prev, newCategory]);
         toast.success('Category created successfully!', {
-          position: 'top-center',
+          position: 'top-right',
           autoClose: 3000,
         });
       }
@@ -316,7 +316,7 @@ const Categories = () => {
     } catch (err) {
       console.error('Error saving category:', err);
       toast.error(`Error saving category: ${err.response?.data?.message || err.message || 'Unknown error'}`, {
-        position: 'top-center',
+        position: 'top-right',
         autoClose: 3000,
       });
     } finally {
@@ -336,14 +336,14 @@ const Categories = () => {
       setDeleteConfirmOpen(false);
       setCategoryToDelete(null);
       toast.success('Category deleted successfully!', {
-        position: 'top-center',
+        position: 'top-right',
         autoClose: 3000,
       });
     } catch (err) {
       console.error('Error deleting category:', err);
       setDeleteConfirmOpen(false);
       toast.error('Error deleting category. Please try again.', {
-        position: 'top-center',
+        position: 'top-right',
         autoClose: 3000,
       });
     }
@@ -363,7 +363,7 @@ const Categories = () => {
       state: { id: categoryId, name: categoryName }
     });
     toast.info(`Viewing products for category "${categoryName}"`, {
-      position: 'top-center',
+      position: 'top-right',
       autoClose: 3000,
     });
   };
@@ -376,7 +376,7 @@ const Categories = () => {
     setSelectedImage(null);
     setShowModal(true);
     toast.info(`Editing category "${category.name}"`, {
-      position: 'top-center',
+      position: 'top-right',
       autoClose: 3000,
     });
   };
@@ -433,7 +433,7 @@ const Categories = () => {
             setPreviewUrl('');
             setShowModal(true);
             toast.info('Opening form to add a new category', {
-              position: 'top-center',
+              position: 'top-right',
               autoClose: 3000,
             });
           }}
@@ -484,7 +484,7 @@ const Categories = () => {
                 setPreviewUrl('');
                 setShowModal(true);
                 toast.info('Opening form to add a new category', {
-                  position: 'top-center',
+                  position: 'top-right',
                   autoClose: 3000,
                 });
               }}
@@ -721,7 +721,7 @@ const Categories = () => {
       </StyledDialog>
 
       <ToastContainer
-        position="top-center"
+        position="top-right"
         autoClose={3000}
         style={{ top: '80px' }}
         toastStyle={{ zIndex: 10000 }}

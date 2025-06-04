@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useLocation, useParams } from 'react-router-dom';
 import {
-  Box, Container, Card, Typography, Button, CardContent, Grid,
+  Box, Container, Typography, Button, CardContent, Grid,
   Dialog, DialogTitle, DialogContent, DialogActions, TextField, IconButton,
   Chip, Paper, Stack, useTheme, alpha, CircularProgress, InputAdornment, MenuItem, Select
 } from '@mui/material';
@@ -200,24 +200,45 @@ const Products = () => {
   };
 
   const handleCartClick = async (product) => {
-    const currentQty = getQuantity(product.productId);
-    if (currentQty === 0) await addToCart(product);
-    else await updateQuantity(product.productId, 1);
-  };
+  const currentQty = getQuantity(product.productId);
+  if (currentQty === 0) {
+    await addToCart(product);
+    toast.success(`"${product.productName}" added to cart!`, {
+      position: 'top-right',
+      autoClose: 3000,
+    });
+  } else {
+    await updateQuantity(product.productId, 1);
+    toast.success(`Increased quantity of "${product.productName}" in cart!`, {
+      position: 'top-right',
+      autoClose: 3000,
+    });
+  }
+};
 
-  const updateProductQuantity = async (productId, delta) => {
-    const currentQty = getQuantity(productId);
-    const newQty = currentQty + delta;
-    if (newQty <= 0) await removeFromCart(productId);
-    else await updateQuantity(productId, delta);
-  };
+const updateProductQuantity = async (productId, delta) => {
+  const currentQty = getQuantity(productId);
+  const newQty = currentQty + delta;
+  const product = products.find((p) => p.productId === productId);
+  if (newQty <= 0) {
+    await removeFromCart(productId);
+  } else {
+    await updateQuantity(productId, delta);
+    if (delta > 0) {
+      toast.success(`Increased quantity of "${product.productName}" in cart!`, {
+        position: 'top-right',
+        autoClose: 3000,
+      });
+    }
+  }
+};
 
   const handleDelete = (id) => {
     setProductToDelete(id);
     setDeleteConfirmOpen(true);
     const product = products.find((p) => p.productId === id);
     toast.info(`Preparing to delete product "${product.productName}"`, {
-      position: 'top-center',
+      position: 'top-right',
       autoClose: 3000,
     });
   };
@@ -228,13 +249,13 @@ const Products = () => {
       setDeleteConfirmOpen(false);
       setProductToDelete(null);
       toast.success('Product deleted successfully!', {
-        position: 'top-center',
+        position: 'top-right',
         autoClose: 3000,
       });
     } catch (err) {
       setDeleteConfirmOpen(false);
       toast.error('Failed to delete product. Please try again.', {
-        position: 'top-center',
+        position: 'top-right',
         autoClose: 3000,
       });
     }
@@ -255,12 +276,12 @@ const Products = () => {
       setImage(null);
       setShowModal(true);
       toast.info(`Editing product "${product.productName}"`, {
-        position: 'top-center',
+        position: 'top-right',
         autoClose: 3000,
       });
     } catch (err) {
       toast.error('Failed to fetch product details. Please try again.', {
-        position: 'top-center',
+        position: 'top-right',
         autoClose: 3000,
       });
     }
@@ -275,7 +296,7 @@ const Products = () => {
     
     if (requiredFields.some(field => !field)) {
       toast.error('Please fill in all required fields.', {
-        position: 'top-center',
+        position: 'top-right',
         autoClose: 3000,
       });
       return;
@@ -302,12 +323,12 @@ const Products = () => {
       setEditProductId(null);
       setIsEditing(false);
       toast.success(isEditing ? 'Product updated successfully!' : 'Product added successfully!', {
-        position: 'top-center',
+        position: 'top-right',
         autoClose: 3000,
       });
     } catch (err) {
       toast.error('Failed to save product. Please try again.', {
-        position: 'top-center',
+        position: 'top-right',
         autoClose: 3000,
       });
     } finally {
@@ -779,7 +800,7 @@ const Products = () => {
       </StyledDialog>
 
       <ToastContainer
-        position="top-center"
+        position="top-right"
         autoClose={3000}
         style={{ top: '80px' }}
         toastStyle={{ zIndex: 10000 }}

@@ -1,62 +1,25 @@
 import { useState, useEffect } from 'react';
 import {
-  Box,
-  Container,
-  Typography,
-  Card,
-  CardContent,
-  Grid,
-  Button,
-  IconButton,
-  Avatar,
-  Chip,
-  Divider,
-  TextField,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Alert,
-  CircularProgress,
-  Paper,
-  Stack,
-  MenuItem,
-  FormControl,
-  InputLabel,
-  Select,
-  Tooltip,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow
+  Box, Container, Typography, Card, CardContent, Grid, Button, IconButton,
+  Avatar, Chip, Divider, TextField, Dialog, DialogTitle, DialogContent, DialogActions,
+  Alert, CircularProgress, Paper, Stack, MenuItem, Tooltip
 } from '@mui/material';
 import {
-  Delete as DeleteIcon,
-  Add as AddIcon,
-  Remove as RemoveIcon,
-  ShoppingCart as ShoppingCartIcon,
-  LocalShipping as DeliveryIcon,
-  Person as PersonIcon,
-  Email as EmailIcon,
-  Phone as PhoneIcon,
-  LocationOn as LocationIcon,
-  DateRange as DateIcon,
-  CheckCircle as CheckIcon,
-  ShoppingBag as BagIcon
+  Delete as DeleteIcon, Add as AddIcon, Remove as RemoveIcon, ShoppingCart as ShoppingCartIcon,
+  LocalShipping as DeliveryIcon, Person as PersonIcon, Email as EmailIcon, Phone as PhoneIcon,
+  LocationOn as LocationIcon, DateRange as DateIcon, CheckCircle as CheckIcon, ShoppingBag as BagIcon
 } from '@mui/icons-material';
-import { ToastContainer, toast } from 'react-toastify'; // Added react-toastify imports
-import 'react-toastify/dist/ReactToastify.css'; // Added CSS import for react-toastify
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import useCartStore from '../store/useCartStore';
 import useAuthStore from '../store/authStore';
 import useCustomerStore from '../store/customerStore';
 import { useAssignDeliveryStore } from '../store/assignDeliveryStore';
+import useProductStore from '../store/productStore';
 
 const API_BASE = 'https://logistic-project-backend.onrender.com/api';
 
 const Cart = () => {
-  // Store hooks
   const cart = useCartStore((state) => state.cart);
   const updateQuantity = useCartStore((state) => state.updateQuantity);
   const removeFromCart = useCartStore((state) => state.removeFromCart);
@@ -67,8 +30,8 @@ const Cart = () => {
   const { assignDelivery } = useAssignDeliveryStore();
   const { customers, fetchCustomers } = useCustomerStore();
   const clearCart = useCartStore((state) => state.clearCart);
+  const { fetchProductById } = useProductStore();
 
-  // State
   const [customerEmail, setCustomerEmail] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
   const [deliveryAgents, setDeliveryAgents] = useState([]);
@@ -79,8 +42,59 @@ const Cart = () => {
   const [agent, setAgent] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [isCheckoutLoading, setIsCheckoutLoading] = useState(false);
+  const [productDetails, setProductDetails] = useState({});
+  const [imageLoadingStates, setImageLoadingStates] = useState({});
 
-  // Effects
+  const getImageUrl = (imagePath) => {
+    if (!imagePath) return 'https://via.placeholder.com/150'; // Fallback placeholder
+    if (imagePath.startsWith('http')) return imagePath;
+    return `${API_BASE}/${imagePath}`;
+  };
+
+  useEffect(() => {
+    const fetchProductDetails = async () => {
+      if (cart.length === 0) return;
+
+      const detailsToFetch = cart.filter(item => !productDetails[item.productId] && !item.imageUrl);
+
+      if (detailsToFetch.length === 0) return;
+
+      const loadingStates = {};
+      detailsToFetch.forEach(item => {
+        loadingStates[item.productId] = true;
+      });
+      setImageLoadingStates(prev => ({ ...prev, ...loadingStates }));
+
+      const details = {};
+      const fetchPromises = detailsToFetch.map(async (item) => {
+        try {
+          const product = await fetchProductById(item.productId);
+          const imageUrl = getImageUrl(product.imageUrl || product.image); // Check for both imageUrl and image
+          details[item.productId] = { ...product, imageUrl };
+        } catch (err) {
+          console.error(`Failed to fetch product ${item.productId}:`, err);
+          details[item.productId] = {
+            imageUrl: 'https://via.placeholder.com/150',
+            productName: item.name || item.productName || 'Unknown Product',
+            price: item.price || 0,
+            description: ''
+          };
+        }
+      });
+
+      await Promise.all(fetchPromises);
+      setProductDetails(prev => ({ ...prev, ...details }));
+
+      const clearedLoadingStates = {};
+      detailsToFetch.forEach(item => {
+        clearedLoadingStates[item.productId] = false;
+      });
+      setImageLoadingStates(prev => ({ ...prev, ...clearedLoadingStates }));
+    };
+
+    fetchProductDetails();
+  }, [cart, fetchProductById]);
+
   useEffect(() => {
     if (token) {
       getCartItems();
@@ -90,9 +104,7 @@ const Cart = () => {
 
   useEffect(() => {
     return () => {
-      if (error) {
-        clearError();
-      }
+      if (error) clearError();
     };
   }, [error, clearError]);
 
@@ -100,9 +112,7 @@ const Cart = () => {
     const fetchAgents = async () => {
       try {
         const res = await fetch(`${API_BASE}/auth/deliveryboys`, {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
+          headers: { 'Authorization': `Bearer ${token}` }
         });
         const data = await res.json();
         setDeliveryAgents(Array.isArray(data) ? data : data.data || []);
@@ -111,19 +121,15 @@ const Cart = () => {
         setDeliveryAgents([]);
       }
     };
-    if (token) {
-      fetchAgents();
-    }
+    if (token) fetchAgents();
   }, [token]);
 
-  // Calculations
   const subtotal = cart.reduce((sum, item) => {
     const price = Number(item.price) || 0;
     const quantity = Number(item.quantity) || 0;
     return sum + (price * quantity);
   }, 0);
 
-  // Handlers
   const handleUpdateQuantity = async (productId, delta) => {
     try {
       await updateQuantity(productId, delta);
@@ -135,6 +141,11 @@ const Cart = () => {
   const handleRemove = async (productId) => {
     try {
       await removeFromCart(productId);
+      setProductDetails(prev => {
+        const updated = { ...prev };
+        delete updated[productId];
+        return updated;
+      });
     } catch (error) {
       console.error('Failed to remove item:', error);
     }
@@ -168,9 +179,7 @@ const Cart = () => {
   const handleConfirmOrder = async () => {
     setIsCheckoutLoading(true);
     const payload = {
-      cartItems: cart.map((item) => ({
-        cartItemId: item.cartItemId
-      })),
+      cartItems: cart.map((item) => ({ cartItemId: item.cartItemId })),
       deliveryBoyId: Number(agent),
       customerName,
       customerNumber: customerPhone,
@@ -182,12 +191,8 @@ const Cart = () => {
 
     try {
       await assignDelivery(payload);
-      try {
-        await clearCart();
-        console.log('Cart cleared successfully after order placement');
-      } catch (clearError) {
-        console.warn('Cart clear failed, but order was placed successfully:', clearError);
-      }
+      await clearCart();
+      setProductDetails({});
       setCustomerName(user?.username || '');
       setCustomerEmail('');
       setCustomerPhone('');
@@ -212,13 +217,7 @@ const Cart = () => {
 
   if (isLoading) {
     return (
-      <Box
-        display="flex"
-        justifyContent="center"
-        alignItems="center"
-        minHeight="60vh"
-        flexDirection="column"
-      >
+      <Box display="flex" justifyContent="center" alignItems="center" minHeight="60vh" flexDirection="column">
         <CircularProgress size={40} />
         <Typography variant="body1" sx={{ mt: 2, color: 'text.secondary' }}>
           Loading your cart...
@@ -229,40 +228,22 @@ const Cart = () => {
 
   return (
     <Container maxWidth="lg" sx={{ py: 3 }}>
-      {/* Header */}
       <Box display="flex" alignItems="center" mb={3}>
         <ShoppingCartIcon sx={{ fontSize: 28, color: 'primary.main', mr: 1 }} />
         <Typography variant="h4" fontWeight="600" color="text.primary">
           Shopping Cart
         </Typography>
-        <Chip
-          label={`${cart.length} ${cart.length === 1 ? 'item' : 'items'}`}
-          size="small"
-          sx={{ ml: 2 }}
-        />
+        <Chip label={`${cart.length} ${cart.length === 1 ? 'item' : 'items'}`} size="small" sx={{ ml: 2 }} />
       </Box>
 
-      {/* Error Alert */}
       {error && (
-        <Alert
-          severity="warning"
-          onClose={clearError}
-          sx={{ mb: 3 }}
-        >
+        <Alert severity="warning" onClose={clearError} sx={{ mb: 3 }}>
           {error}
         </Alert>
       )}
 
       {cart.length === 0 ? (
-        <Paper
-          elevation={1}
-          sx={{
-            p: 6,
-            textAlign: 'center',
-            border: '1px solid',
-            borderColor: 'divider'
-          }}
-        >
+        <Paper elevation={1} sx={{ p: 6, textAlign: 'center', border: '1px solid', borderColor: 'divider' }}>
           <BagIcon sx={{ fontSize: 48, color: 'text.secondary', mb: 2 }} />
           <Typography variant="h6" gutterBottom>
             Your cart is empty
@@ -273,120 +254,152 @@ const Cart = () => {
         </Paper>
       ) : (
         <>
-          {/* Cart Items Table */}
-          <Paper elevation={1} sx={{ mb: 3 }}>
-            <TableContainer>
-              <Table>
-                <TableHead>
-                  <TableRow>
-                    <TableCell>Product</TableCell>
-                    <TableCell align="center">Price</TableCell>
-                    <TableCell align="center">Quantity</TableCell>
-                    <TableCell align="center">Total</TableCell>
-                    <TableCell align="center">Actions</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {cart.map((item, index) => {
-                    const uniqueKey = `${item.productId}-${index}`;
-                    const price = Number(item.price) || 0;
-                    const quantity = Number(item.quantity) || 0;
-                    const total = price * quantity;
+          <Grid container spacing={3} sx={{ mb: 3 }}>
+            {cart.map((item, index) => {
+              const uniqueKey = `${item.productId}-${index}`;
+              const price = Number(item.price) || 0;
+              const quantity = Number(item.quantity) || 0;
+              const total = price * quantity;
+              const product = productDetails[item.productId] || {};
+              const productName = item.productName || product.productName || item.name || 'Unknown Product';
+              const productImage = item.imageUrl ? getImageUrl(item.imageUrl) : product.imageUrl || 'https://via.placeholder.com/150';
+              const isImageLoading = imageLoadingStates[item.productId];
 
-                    return (
-                      <TableRow key={uniqueKey} hover>
-                        <TableCell>
-                          <Box display="flex" alignItems="center" gap={2}>
-                            <Avatar
-                              src={item.image}
-                              sx={{
-                                width: 50,
-                                height: 50,
-                                bgcolor: 'primary.light'
-                              }}
-                            >
-                              {(item.name || item.productName || 'P').slice(0, 2)}
-                            </Avatar>
-                            <Typography variant="body1" fontWeight="500">
-                              {item.name || item.productName || 'Unknown Product'}
-                            </Typography>
-                          </Box>
-                        </TableCell>
-                        <TableCell align="center">
-                          <Typography variant="body1">
-                            ₹{price.toFixed(2)}
-                          </Typography>
-                        </TableCell>
-                        <TableCell align="center">
-                          <Box display="flex" alignItems="center" justifyContent="center" gap={1}>
-                            <IconButton
-                              size="small"
-                              onClick={() => handleUpdateQuantity(item.productId, -1)}
-                              disabled={quantity <= 1}
-                            >
-                              <RemoveIcon fontSize="small" />
-                            </IconButton>
-                            <Typography variant="body1" sx={{ minWidth: 30, textAlign: 'center' }}>
-                              {quantity}
-                            </Typography>
-                            <IconButton
-                              size="small"
-                              onClick={() => handleUpdateQuantity(item.productId, 1)}
-                            >
-                              <AddIcon fontSize="small" />
-                            </IconButton>
-                          </Box>
-                        </TableCell>
-                        <TableCell align="center">
-                          <Typography variant="body1" fontWeight="600">
-                            ₹{total.toFixed(2)}
-                          </Typography>
-                        </TableCell>
-                        <TableCell align="center">
-                          <Tooltip title="Remove item">
-                            <IconButton
-                              onClick={() => handleRemove(item.productId)}
-                              color="error"
-                              size="small"
-                            >
-                              <DeleteIcon />
-                            </IconButton>
-                          </Tooltip>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-            </TableContainer>
-          </Paper>
+              return (
+                <Grid item xs={12} sm={6} md={4} key={uniqueKey}>
+                  <Card elevation={1} sx={{ display: 'flex', alignItems: 'center', p: 2, borderRadius: 2 }}>
+                    <Box sx={{ flexShrink: 0, mr: 2, position: 'relative' }}>
+                      {isImageLoading && (
+                        <Box
+                          sx={{
+                            position: 'absolute',
+                            top: '50%',
+                            left: '50%',
+                            transform: 'translate(-50%, -50%)',
+                            zIndex: 1,
+                          }}
+                        >
+                          <CircularProgress size={20} />
+                        </Box>
+                      )}
+                      <Box
+                        component="img"
+                        src={productImage}
+                        alt={productName}
+                        sx={{
+                          width: 100,
+                          height: 100,
+                          borderRadius: 2,
+                          objectFit: 'cover',
+                          bgcolor: 'grey.200',
+                          opacity: isImageLoading ? 0.5 : 1,
+                          display: productImage ? 'block' : 'none',
+                        }}
+                        onError={(e) => {
+                          console.log(`Failed to load image for product ${item.productId}`);
+                          e.target.src = 'https://via.placeholder.com/150'; // Fallback to placeholder
+                        }}
+                      />
+                      {!productImage && (
+                        <Avatar
+                          sx={{
+                            width: 100,
+                            height: 100,
+                            borderRadius: 2,
+                            bgcolor: 'primary.light',
+                            fontSize: '1.5rem',
+                          }}
+                        >
+                          {(productName || 'P').slice(0, 2)}
+                        </Avatar>
+                      )}
+                    </Box>
 
-          {/* Delivery Assignment */}
-          <Card elevation={1} sx={{ mb: 3 }}>
-            <CardContent sx={{ p: 3 }}>
-              <Box display="flex" alignItems="center" mb={3}>
-                <DeliveryIcon sx={{ color: 'primary.main', mr: 1 }} />
-                <Typography variant="h6" fontWeight="600">
+                    <Box sx={{ flexGrow: 1 }}>
+                      <Typography variant="body2" color="text.secondary">
+                        Price: ₹{price.toFixed(2)}
+                      </Typography>
+                      <Box display="flex" alignItems="center" my={1}>
+                        <IconButton
+                          size="small"
+                          onClick={() => handleUpdateQuantity(item.productId, -1)}
+                          disabled={quantity <= 1}
+                          sx={{ bgcolor: 'grey.200', mr: 1 }}
+                        >
+                          <RemoveIcon fontSize="small" />
+                        </IconButton>
+                        <Typography variant="body2" sx={{ minWidth: 30, textAlign: 'center' }}>
+                          {quantity}
+                        </Typography>
+                        <IconButton
+                          size="small"
+                          onClick={() => handleUpdateQuantity(item.productId, 1)}
+                          sx={{ bgcolor: 'grey.200', ml: 1 }}
+                        >
+                          <AddIcon fontSize="small" />
+                        </IconButton>
+                      </Box>
+                      <Typography variant="body2" fontWeight="600">
+                        TOTAL: ₹{total.toFixed(2)}
+                      </Typography>
+                    </Box>
+
+                    <Box sx={{ flexShrink: 0 }}>
+                      <Tooltip title="Remove item">
+                        <IconButton
+                          onClick={() => handleRemove(item.productId)}
+                          color="error"
+                          size="small"
+                        >
+                          <DeleteIcon />
+                        </IconButton>
+                      </Tooltip>
+                    </Box>
+                  </Card>
+                </Grid>
+              );
+            })}
+          </Grid>
+
+          <Card elevation={3} sx={{ mb: 4, borderRadius: 3, bgcolor: 'background.paper' }}>
+            <CardContent sx={{ p: { xs: 2, md: 4 } }}>
+              <Box display="flex" alignItems="center" mb={4}>
+                <DeliveryIcon sx={{ color: 'primary.main', fontSize: 28, mr: 1.5 }} />
+                <Typography variant="h5" fontWeight="bold" color="text.primary">
                   Delivery Details
                 </Typography>
               </Box>
-
-              <Grid container spacing={3}>
-                <Grid item xs={12} md={6}>
-                  <FormControl fullWidth>
-                    <InputLabel>Customer</InputLabel>
-                    <Select
-                      value={customerName}
+              <Box sx={{ maxWidth: '1200px', mx: 'auto' }}>
+                <Grid container spacing={3} sx={{ display: 'flex', flexWrap: 'wrap' }}>
+                  <Grid item xs={12} md={4} sx={{ minWidth: { md: '300px' }, flex: '1 1 auto' }}>
+                    <TextField
+                      fullWidth
+                      select
                       label="Customer"
+                      value={customerName}
                       onChange={(e) => {
                         const selected = e.target.value;
                         setCustomerName(selected);
-                        const customer = customers.find(c => c.customerName === selected);
+                        const customer = customers.find((c) => c.customerName === selected);
                         if (customer) {
                           setAddress(customer.address);
                           setCustomerEmail(customer.email);
                           setCustomerPhone(customer.contactNumber);
                         }
+                      }}
+                      variant="outlined"
+                      InputProps={{
+                        startAdornment: <PersonIcon sx={{ color: 'action.active', mr: 1 }} />,
+                      }}
+                      sx={{
+                        '& .MuiOutlinedInput-root': {
+                          borderRadius: '8px',
+                          bgcolor: 'grey.50',
+                          height: '50px',
+                          display: 'flex',
+                          width: '330px',
+                          alignItems: 'center',
+                        },
                       }}
                     >
                       {customers.map((cust) => (
@@ -394,83 +407,144 @@ const Cart = () => {
                           {cust.customerName}
                         </MenuItem>
                       ))}
-                    </Select>
-                  </FormControl>
-                </Grid>
-
-                <Grid item xs={12} md={6}>
-                  <TextField
-                    fullWidth
-                    label="Email"
-                    value={customerEmail}
-                    onChange={(e) => setCustomerEmail(e.target.value)}
-                    error={customerEmail && !/\S+@\S+\.\S+/.test(customerEmail)}
-                    helperText={customerEmail && !/\S+@\S+\.\S+/.test(customerEmail) ? "Invalid email format" : ""}
-                  />
-                </Grid>
-
-                <Grid item xs={12} md={6}>
-                  <TextField
-                    fullWidth
-                    label="Phone"
-                    value={customerPhone}
-                    onChange={(e) => setCustomerPhone(e.target.value)}
-                    error={customerPhone && !/^\d{10}$/.test(customerPhone)}
-                    helperText={customerPhone && !/^\d{10}$/.test(customerPhone) ? "Enter a valid 10-digit phone number" : ""}
-                  />
-                </Grid>
-
-                <Grid item xs={12} md={6}>
-                  <TextField
-                    fullWidth
-                    label="Delivery Date"
-                    type="date"
-                    value={deliveryDate}
-                    onChange={(e) => setDeliveryDate(e.target.value)}
-                    InputLabelProps={{ shrink: true }}
-                    inputProps={{ min: new Date().toISOString().split('T')[0] }}
-                  />
-                </Grid>
-
-                <Grid item xs={12}>
-                  <TextField
-                    fullWidth
-                    label="Delivery Address"
-                    value={address}
-                    onChange={(e) => setAddress(e.target.value)}
-                    multiline
-                    rows={2}
-                  />
-                </Grid>
-
-                <Grid item xs={12} md={6}>
-                  <FormControl fullWidth>
-                    <InputLabel>Delivery Agent</InputLabel>
-                    <Select
-                      value={agent}
+                    </TextField>
+                  </Grid>
+                  <Grid item xs={12} md={4} sx={{ minWidth: { md: '300px' }, flex: '1 1 auto' }}>
+                    <TextField
+                      fullWidth
+                      label="Email"
+                      value={customerEmail}
+                      onChange={(e) => setCustomerEmail(e.target.value)}
+                      error={customerEmail && !/\S+@\S+\.\S+/.test(customerEmail)}
+                      helperText={
+                        customerEmail && !/\S+@\S+\.\S+/.test(customerEmail) ? 'Invalid email format' : ''
+                      }
+                      variant="outlined"
+                      InputProps={{
+                        startAdornment: <EmailIcon sx={{ color: 'action.active', mr: 1 }} />,
+                      }}
+                      sx={{
+                        '& .MuiOutlinedInput-root': {
+                          borderRadius: '8px',
+                          bgcolor: 'grey.50',
+                          height: '50px',
+                          display: 'flex',
+                          width: '330px',
+                          alignItems: 'center',
+                        },
+                      }}
+                    />
+                  </Grid>
+                  <Grid item xs={12} md={4} sx={{ minWidth: { md: '300px' }, flex: '1 1 auto' }}>
+                    <TextField
+                      fullWidth
+                      label="Phone"
+                      value={customerPhone}
+                      onChange={(e) => setCustomerPhone(e.target.value)}
+                      variant="outlined"
+                      InputProps={{
+                        startAdornment: <PhoneIcon sx={{ color: 'action.active', mr: 1 }} />,
+                      }}
+                      sx={{
+                        '& .MuiOutlinedInput-root': {
+                          borderRadius: '8px',
+                          bgcolor: 'grey.50',
+                          height: '50px',
+                          display: 'flex',
+                          width: '330px',
+                          alignItems: 'center',
+                        },
+                      }}
+                    />
+                  </Grid>
+                  <Grid item xs={12} md={4} sx={{ minWidth: { md: '300px' }, flex: '1 1 auto' }}>
+                    <TextField
+                      fullWidth
+                      label="Delivery Date"
+                      type="date"
+                      value={deliveryDate}
+                      onChange={(e) => setDeliveryDate(e.target.value)}
+                      InputLabelProps={{ shrink: true }}
+                      inputProps={{ min: new Date().toISOString().split('T')[0] }}
+                      variant="outlined"
+                      InputProps={{
+                        startAdornment: <DateIcon sx={{ color: 'action.active', mr: 1 }} />,
+                      }}
+                      sx={{
+                        '& .MuiOutlinedInput-root': {
+                          borderRadius: '8px',
+                          bgcolor: 'grey.50',
+                          height: '50px',
+                          display: 'flex',
+                          width: '330px',
+                          alignItems: 'center',
+                        },
+                      }}
+                    />
+                  </Grid>
+                  <Grid item xs={12} md={4} sx={{ minWidth: { md: '300px' }, flex: '1 1 auto' }}>
+                    <TextField
+                      fullWidth
+                      label="Delivery Address"
+                      value={
+                        address.split(/\s+/).filter(Boolean).length > 6
+                          ? `${address.split(/\s+/).slice(0, 6).join(' ')} ...`
+                          : address
+                      }
+                      onChange={(e) => setAddress(e.target.value)}
+                      multiline
+                      rows={2}
+                      variant="outlined"
+                      InputProps={{
+                        startAdornment: <LocationIcon sx={{ color: 'action.active', mr: 1 }} />,
+                      }}
+                      sx={{
+                        '& .MuiOutlinedInput-root': {
+                          borderRadius: '8px',
+                          bgcolor: 'grey.50',
+                          height: '50px',
+                          alignItems: 'flex-start',
+                          width: '330px',
+                        },
+                      }}
+                    />
+                  </Grid>
+                  <Grid item xs={12} md={4} sx={{ minWidth: { md: '300px' }, flex: '1 1 auto' }}>
+                    <TextField
+                      fullWidth
+                      select
                       label="Delivery Agent"
+                      value={agent}
                       onChange={(e) => setAgent(e.target.value)}
+                      variant="outlined"
+                      InputProps={{
+                        startAdornment: <PersonIcon sx={{ color: 'action.active', mr: 1 }} />,
+                      }}
+                      sx={{
+                        '& .MuiOutlinedInput-root': {
+                          borderRadius: '8px',
+                          bgcolor: 'grey.50',
+                          height: '50px',
+                          width: '330px',
+                          display: 'flex',
+                          alignItems: 'center',
+                        },
+                      }}
                     >
                       {deliveryAgents.map((d) => (
                         <MenuItem key={d.userId} value={d.userId}>
                           {d.username}
                         </MenuItem>
                       ))}
-                    </Select>
-                  </FormControl>
+                    </TextField>
+                  </Grid>
                 </Grid>
-              </Grid>
+              </Box>
             </CardContent>
           </Card>
 
-          {/* Checkout Section */}
           <Paper elevation={1} sx={{ p: 3, bgcolor: 'grey.50' }}>
-            <Stack
-              direction={{ xs: 'column', md: 'row' }}
-              justifyContent="space-between"
-              alignItems="center"
-              spacing={2}
-            >
+            <Stack direction={{ xs: 'column', md: 'row' }} justifyContent="space-between" alignItems="center" spacing={2}>
               <Box>
                 <Typography variant="h5" fontWeight="600" color="primary.main">
                   Total: ₹{subtotal.toFixed(2)}
@@ -479,18 +553,13 @@ const Cart = () => {
                   {cart.length} items in cart
                 </Typography>
               </Box>
-
               <Button
                 variant="contained"
                 size="large"
                 onClick={handleCheckout}
                 disabled={!customerName || !address || !deliveryDate || !agent || cart.length === 0 || isCheckoutLoading}
                 startIcon={isCheckoutLoading ? <CircularProgress size={20} /> : <CheckIcon />}
-                sx={{
-                  px: 4,
-                  py: 1.5,
-                  minWidth: 160
-                }}
+                sx={{ px: 4, py: 1.5, minWidth: 160 }}
               >
                 {isCheckoutLoading ? 'Processing...' : 'Assign Order'}
               </Button>
@@ -499,20 +568,13 @@ const Cart = () => {
         </>
       )}
 
-      {/* Confirmation Dialog */}
-      <Dialog
-        open={showModal}
-        onClose={() => setShowModal(false)}
-        maxWidth="sm"
-        fullWidth
-      >
+      <Dialog open={showModal} onClose={() => setShowModal(false)} maxWidth="sm" fullWidth>
         <DialogTitle>
           <Box display="flex" alignItems="center" gap={2}>
             <CheckIcon color="success" />
             <Typography variant="h6">Confirm Order</Typography>
           </Box>
         </DialogTitle>
-
         <DialogContent>
           <Stack spacing={2}>
             <Box display="flex" justifyContent="space-between">
@@ -547,12 +609,8 @@ const Cart = () => {
             </Box>
           </Stack>
         </DialogContent>
-
         <DialogActions sx={{ p: 3 }}>
-          <Button
-            onClick={() => setShowModal(false)}
-            variant="outlined"
-          >
+          <Button onClick={() => setShowModal(false)} variant="outlined">
             Cancel
           </Button>
           <Button
@@ -566,13 +624,7 @@ const Cart = () => {
         </DialogActions>
       </Dialog>
 
-      {/* Add ToastContainer for react-toastify */}
-      <ToastContainer
-        position="top-right"
-        autoClose={3000}
-        style={{ top: '80px' }} // Adjusts the top position to avoid overlapping with the header
-        toastStyle={{ zIndex: 10000 }} // Ensures the toast is above the header
-      />
+      <ToastContainer position="top-right" autoClose={3000} style={{ top: '80px' }} toastStyle={{ zIndex: 10000 }} />
     </Container>
   );
 };

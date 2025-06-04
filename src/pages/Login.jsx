@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import useAuthStore from '../store/authStore';
 import { Box, Card, Typography, TextField, Button, Alert, CircularProgress } from '@mui/material';
 import LockIcon from '@mui/icons-material/Lock';
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 const Login = () => {
   const { login } = useAuthStore();
@@ -18,7 +20,13 @@ const Login = () => {
     setLoading(true);
     try {
       await login({ email, password });
-      navigate('/');
+      toast.success('Login successful!', {
+        position: 'top-right',
+        autoClose: 2000,
+      });
+      setTimeout(() => {
+        navigate('/');
+      }, 2000); // Delay navigation by 2 seconds to allow toast to display
     } catch (error) {
       setErr(error.message);
     } finally {
@@ -93,7 +101,7 @@ const Login = () => {
               letterSpacing: '0.5px',
             }}
           >
-            Admin Login
+             Login
           </Typography>
           {err && (
             <Alert
@@ -189,9 +197,14 @@ const Login = () => {
               {loading ? 'Logging in...' : 'Login'}
             </Button>
           </Box>
-
         </Box>
       </Card>
+      <ToastContainer
+        position="top-right"
+        autoClose={2000}
+        style={{ top: '80px' }}
+        toastStyle={{ zIndex: 10000 }}
+      />
     </Box>
   );
 };

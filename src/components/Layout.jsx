@@ -36,6 +36,8 @@ import {
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import useAuthStore from '../store/authStore';
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 const drawerWidth = 280;
 
@@ -64,10 +66,25 @@ const Layout = () => {
     if (isMobile) setMobileOpen(false);
   };
 
-  const handleLogout = () => {
-    logout();
-    navigate('/login');
-    setMobileOpen(false);
+  const handleLogout = async () => {
+    try {
+      console.log('Attempting to logout...'); // Debug log
+      await logout(); // Ensure logout is called
+      toast.success('Logged out successfully!', {
+        position: 'top-center',
+        autoClose: 3000,
+      });
+      setTimeout(() => {
+        navigate('/login');
+        setMobileOpen(false);
+      }, 3500); // Delay navigation to show toast
+    } catch (error) {
+      console.error('Logout failed:', error);
+      toast.error('Failed to logout. Please try again.', {
+        position: 'top-center',
+        autoClose: 3000,
+      });
+    }
   };
 
   const drawer = (
@@ -80,7 +97,6 @@ const Layout = () => {
         flexDirection: 'column',
       }}
     >
-      {/* Enhanced Header */}
       <Box sx={{ p: 3, textAlign: 'center' }}>
         <Avatar
           sx={{
@@ -114,7 +130,6 @@ const Layout = () => {
 
       <Divider sx={{ bgcolor: alpha('#fff', 0.1), mx: 2 }} />
 
-      {/* Enhanced Navigation */}
       <List sx={{ flex: 1, px: 2, py: 3 }}>
         {navItems.map((item, index) => (
           <ListItem key={item.label} disablePadding sx={{ mb: 1 }}>
@@ -174,7 +189,6 @@ const Layout = () => {
 
       <Divider sx={{ bgcolor: alpha('#fff', 0.1), mx: 2 }} />
 
-      {/* Enhanced Logout */}
       <Box sx={{ p: 2 }}>
         <ListItemButton
           onClick={handleLogout}
@@ -210,7 +224,6 @@ const Layout = () => {
     <Box sx={{ display: 'flex' }}>
       <CssBaseline />
       
-      {/* Enhanced AppBar */}
       <AppBar
         position="fixed"
         sx={{
@@ -255,12 +268,9 @@ const Layout = () => {
               Logistics Application
             </Typography>
           </Box>
-
-          
         </Toolbar>
       </AppBar>
 
-      {/* Enhanced Sidebar Drawer */}
       <Box
         component="nav"
         sx={{ width: { md: drawerWidth }, flexShrink: { md: 0 } }}
@@ -296,7 +306,6 @@ const Layout = () => {
         </Drawer>
       </Box>
 
-      {/* Enhanced Main Content */}
       <Box
         component="main"
         sx={{
@@ -322,6 +331,12 @@ const Layout = () => {
           <Outlet />
         </Box>
       </Box>
+      <ToastContainer
+        position="top-center"
+        autoClose={3000}
+        style={{ top: '80px' }}
+        toastStyle={{ zIndex: 10000 }}
+      />
     </Box>
   );
 };
