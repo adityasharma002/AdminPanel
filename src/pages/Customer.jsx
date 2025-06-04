@@ -42,7 +42,7 @@ const Customer = () => {
         await fetchCustomers();
       } catch (error) {
         toast.error('Failed to fetch customers. Please try again.', {
-          position: 'top-center',
+          position: 'top-right',
           autoClose: 3000,
         });
       }
@@ -54,7 +54,7 @@ const Customer = () => {
     e.preventDefault();
     if (!form.customerName || !form.email || !form.contactNumber || !form.address) {
       toast.error('Please fill in all required fields.', {
-        position: 'top-center',
+        position: 'top-right',
         autoClose: 3000,
       });
       return;
@@ -64,13 +64,13 @@ const Customer = () => {
       if (editMode && editingCustomerId) {
         await updateCustomer(editingCustomerId, form);
         toast.success('Customer updated successfully!', {
-          position: 'top-center',
+          position: 'top-right',
           autoClose: 3000,
         });
       } else {
         await addCustomer(form);
         toast.success('Customer added successfully!', {
-          position: 'top-center',
+          position: 'top-right',
           autoClose: 3000,
         });
       }
@@ -80,7 +80,7 @@ const Customer = () => {
       setOpenModal(false);
     } catch (error) {
       toast.error('Failed to save customer. Please try again.', {
-        position: 'top-center',
+        position: 'top-right',
         autoClose: 3000,
       });
     }
@@ -97,7 +97,7 @@ const Customer = () => {
     setEditMode(true);
     setOpenModal(true);
     toast.info(`Editing customer "${customer.customerName}"`, {
-      position: 'top-center',
+      position: 'top-right',
       autoClose: 3000,
     });
   };
@@ -113,13 +113,13 @@ const Customer = () => {
       setDeleteConfirmOpen(false);
       setCustomerToDelete(null);
       toast.success('Customer deleted successfully!', {
-        position: 'top-center',
+        position: 'top-right',
         autoClose: 3000,
       });
     } catch (error) {
       setDeleteConfirmOpen(false);
       toast.error('Failed to delete customer. Please try again.', {
-        position: 'top-center',
+        position: 'top-right',
         autoClose: 3000,
       });
     }
@@ -350,7 +350,7 @@ const Customer = () => {
       </Modal>
 
       <ToastContainer
-        position="top-center"
+        position="top-right"
         autoClose={3000}
         style={{ top: '80px' }}
         toastStyle={{ zIndex: 10000 }}

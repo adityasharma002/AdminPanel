@@ -71,7 +71,7 @@ const Layout = () => {
       console.log('Attempting to logout...'); // Debug log
       await logout(); // Ensure logout is called
       toast.success('Logged out successfully!', {
-        position: 'top-center',
+        position: 'top-right',
         autoClose: 3000,
       });
       setTimeout(() => {
@@ -81,7 +81,7 @@ const Layout = () => {
     } catch (error) {
       console.error('Logout failed:', error);
       toast.error('Failed to logout. Please try again.', {
-        position: 'top-center',
+        position: 'top-right',
         autoClose: 3000,
       });
     }
@@ -332,7 +332,7 @@ const Layout = () => {
         </Box>
       </Box>
       <ToastContainer
-        position="top-center"
+        position="top-right"
         autoClose={3000}
         style={{ top: '80px' }}
         toastStyle={{ zIndex: 10000 }}

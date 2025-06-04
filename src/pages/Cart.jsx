@@ -166,13 +166,7 @@ const Cart = () => {
       });
       return;
     }
-    if (!/^\d{10}$/.test(customerPhone)) {
-      toast.error('Please enter a valid 10-digit phone number.', {
-        position: 'top-right',
-        autoClose: 3000,
-      });
-      return;
-    }
+    
     setShowModal(true);
   };
 
