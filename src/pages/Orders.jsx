@@ -191,48 +191,67 @@ const Orders = () => {
               </TableRow>
             </TableHead>
             <TableBody>
-              {filteredOrders.map((order) => (
-                <StyledTableRow key={order.id}>
-                  <TableCell>{order.id}</TableCell>
-                  <TableCell>{order.customerName}</TableCell>
-                  <TableCell>{order.address}</TableCell>
-                  <TableCell>{order.deliveryDate}</TableCell>
-                  <TableCell>₹{order.totalAmount}</TableCell>
-                  <TableCell>{order.orderDate}</TableCell>
-                  <TableCell>
-                    <Box sx={{ maxWidth: 200 }}>
-                      {order.products.map((p, index) => (
-                        <Typography
-                          key={index}
-                          variant="body2"
-                          noWrap
-                          sx={{ textOverflow: 'ellipsis', overflow: 'hidden' }}
-                        >
-                          {`${p.name} (x${p.quantity})`}
-                        </Typography>
-                      ))}
-                    </Box>
-                  </TableCell>
-                  <TableCell align="center">
-                    <Typography variant="body2">
-                      {order.products.map((p) => p.quantity).join(', ')}
-                    </Typography>
-                  </TableCell>
-                  <TableCell>{order.deliveryBoy || '-'}</TableCell>
-                  <TableCell>{order.status}</TableCell>
-                  <TableCell>
-                    <IconButton
-                      component={Link}
-                      to={`/invoice/${order.id.replace('#', '')}`}
-                      color="primary"
-                      size="small"
-                    >
-                      <VisibilityIcon />
-                    </IconButton>
-                  </TableCell>
-                </StyledTableRow>
-              ))}
-            </TableBody>
+  {filteredOrders.map((order) => {
+    // Process products for display: show up to 2 products, stacked vertically
+    const visibleProducts = order.products.slice(0, 2);
+    const extraProducts = order.products.length > 2 ? `+${order.products.length - 2} more` : '';
+
+    // Process address for display (truncate if more than 5 words, as per previous request)
+    const addressWords = order.address.split(' ');
+    const displayAddress = addressWords.length > 5 
+      ? addressWords.slice(0, 5).join(' ') + '...' 
+      : order.address;
+
+    return (
+      <StyledTableRow key={order.id}>
+        <TableCell>{order.id}</TableCell>
+        <TableCell>{order.customerName}</TableCell>
+        <TableCell>{displayAddress}</TableCell>
+        <TableCell>{order.deliveryDate}</TableCell>
+        <TableCell>₹{order.totalAmount}</TableCell>
+        <TableCell>{order.orderDate}</TableCell>
+        <TableCell>
+          <Box sx={{ maxWidth: 200, display: 'flex', flexDirection: 'column' }}>
+            {visibleProducts.map((p, index) => (
+              <Typography
+                key={index}
+                variant="body2"
+                sx={{ textOverflow: 'ellipsis', overflow: 'hidden' }}
+              >
+                {`${p.name} (x${p.quantity})`}
+              </Typography>
+            ))}
+            {extraProducts && (
+              <Typography
+                variant="body2"
+                sx={{ color: 'primary.main', mt: 0.5 }}
+              >
+                {extraProducts}
+              </Typography>
+            )}
+          </Box>
+        </TableCell>
+        <TableCell align="center">
+          <Typography variant="body2">
+            {order.products.map((p) => p.quantity).join(', ')}
+          </Typography>
+        </TableCell>
+        <TableCell>{order.deliveryBoy || '-'}</TableCell>
+        <TableCell>{order.status}</TableCell>
+        <TableCell>
+          <IconButton
+            component={Link}
+            to={`/invoice/${order.id.replace('#', '')}`}
+            color="primary"
+            size="small"
+          >
+            <VisibilityIcon />
+          </IconButton>
+        </TableCell>
+      </StyledTableRow>
+    );
+  })}
+</TableBody>
           </Table>
         </TableContainer>
       )}
