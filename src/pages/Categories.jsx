@@ -40,43 +40,36 @@ const HeaderContainer = styled(Box)(({ theme }) => ({
 }));
 
 const SearchBar = styled(TextField)(({ theme }) => ({
-  maxWidth: '600px',
+  maxWidth: '400px',
   width: '100%',
   '& .MuiOutlinedInput-root': {
-    borderRadius: '12px',
-    backgroundColor: theme.palette.background.paper,
-    borderColor: theme.palette.grey[300],
-    boxShadow: '0 2px 4px rgba(0, 0, 0, 0.05)',
+    borderRadius: '8px',
+    backgroundColor: theme.palette.grey[50],
+    borderColor: theme.palette.grey[200],
     transition: 'all 0.3s ease',
     '&:hover': {
-      backgroundColor: theme.palette.grey[50],
-      borderColor: theme.palette.grey[400],
-      boxShadow: '0 4px 8px rgba(0, 0, 0, 0.1)',
+      backgroundColor: theme.palette.grey[100],
+      borderColor: theme.palette.grey[300],
     },
     '&.Mui-focused': {
       backgroundColor: theme.palette.common.white,
       borderColor: theme.palette.primary.main,
-      boxShadow: `0 0 0 3px ${alpha(theme.palette.primary.main, 0.15)}`,
+      boxShadow: `0 0 0 2px ${alpha(theme.palette.primary.main, 0.2)}`,
     },
   },
   '& .MuiOutlinedInput-input': {
-    padding: theme.spacing(1.75),
-    fontSize: '15px',
+    padding: theme.spacing(1.5),
+    fontSize: '14px',
   },
   '& .MuiInputLabel-outlined': {
-    fontSize: '15px',
-    transform: 'translate(14px, 14px) scale(1)',
+    fontSize: '14px',
+    transform: 'translate(14px, 12px) scale(1)',
     '&.MuiInputLabel-shrink': {
-      transform: 'translate(14px, -8px) scale(0.75)',
-    },
-  },
-  '& .MuiInputAdornment-root': {
-    transition: 'transform 0.2s ease',
-    '&:hover': {
-      transform: 'scale(1.1)',
+      transform: 'translate(14px, -6px) scale(0.75)',
     },
   },
 }));
+
 
 const ActionIconButton = styled(IconButton)(({ theme }) => ({
   width: '32px',
@@ -432,10 +425,6 @@ const Categories = () => {
             setSelectedImage(null);
             setPreviewUrl('');
             setShowModal(true);
-            toast.info('Opening form to add a new category', {
-              position: 'top-right',
-              autoClose: 3000,
-            });
           }}
           sx={{ minWidth: '140px', flexShrink: 0 }}
         >

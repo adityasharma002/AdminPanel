@@ -2,7 +2,7 @@ import React from 'react';
 import {
   Card, CardContent, Box, Typography, styled
 } from '@mui/material';
-import { Image as ImageIcon } from '@mui/icons-material';
+import { Terrain as TerrainIcon } from '@mui/icons-material'; // Using TerrainIcon for a mountain-like appearance
 
 const StyledCard = styled(Card)(({ theme }) => ({
   borderRadius: '12px',
@@ -41,8 +41,8 @@ const PlaceholderContainer = styled(Box)(({ theme }) => ({
   flexDirection: 'column',
   alignItems: 'center',
   justifyContent: 'center',
-  backgroundColor: theme.palette.grey[100],
-  color: theme.palette.grey[500],
+  backgroundColor: theme.palette.grey[200], // Match the gray background from the image
+  color: theme.palette.grey[600], // Slightly darker gray for the text
 }));
 
 const ContentContainer = styled(CardContent)(({ theme }) => ({
@@ -79,8 +79,10 @@ const CardDesign = ({
           <StyledImage src={imageUrl} alt="Card Image" />
         ) : (
           <PlaceholderContainer>
-            {placeholderIcon || <ImageIcon sx={{ fontSize: 40, mb: 1 }} />}
-            <Typography variant="body2">{placeholderText}</Typography>
+            {placeholderIcon || <TerrainIcon sx={{ fontSize: 40, mb: 1, color: 'grey.500' }} />}
+            <Typography variant="body2" fontWeight="500">
+              {placeholderText}
+            </Typography>
           </PlaceholderContainer>
         )}
       </ImageContainer>

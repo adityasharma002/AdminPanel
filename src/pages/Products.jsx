@@ -236,11 +236,7 @@ const updateProductQuantity = async (productId, delta) => {
   const handleDelete = (id) => {
     setProductToDelete(id);
     setDeleteConfirmOpen(true);
-    const product = products.find((p) => p.productId === id);
-    toast.info(`Preparing to delete product "${product.productName}"`, {
-      position: 'top-right',
-      autoClose: 3000,
-    });
+    
   };
 
   const confirmDelete = async () => {
@@ -275,10 +271,7 @@ const updateProductQuantity = async (productId, delta) => {
       }
       setImage(null);
       setShowModal(true);
-      toast.info(`Editing product "${product.productName}"`, {
-        position: 'top-right',
-        autoClose: 3000,
-      });
+      
     } catch (err) {
       toast.error('Failed to fetch product details. Please try again.', {
         position: 'top-right',
@@ -451,13 +444,7 @@ const updateProductQuantity = async (productId, delta) => {
               ? 'Try a different search term'
               : 'Start adding products to see them here.'}
           </Typography>
-          <PrimaryButton
-            variant="contained"
-            startIcon={<AddIcon />}
-            onClick={openAddProductModal}
-          >
-            Add Product
-          </PrimaryButton>
+          
         </EmptyStateContainer>
       )}
 
@@ -466,8 +453,9 @@ const updateProductQuantity = async (productId, delta) => {
           {filteredProducts.map((product) => (
             <Grid item key={product.productId}>
               <CardDesign
-                imageUrl={product.imageUrl || 'https://via.placeholder.com/150'}
+                imageUrl={product.imageUrl}
                 placeholderText="No Image"
+                placeholderIcon={<ImageIcon sx={{ fontSize: 36, mb: 1 }} />}
                 actions={
                   <>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
