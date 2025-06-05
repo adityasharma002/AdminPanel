@@ -102,10 +102,7 @@ const Customer = () => {
     setEditingCustomerId(customer.customerId);
     setEditMode(true);
     setOpenModal(true);
-    toast.info(`Editing customer "${customer.customerName}"`, {
-      position: 'top-right',
-      autoClose: 3000,
-    });
+    
   };
 
   const handleDelete = (id) => {
@@ -533,18 +530,19 @@ const Customer = () => {
       </Modal>
 
       <ToastContainer
-        position="top-right"
-        autoClose={3000}
-        style={{ 
-          top: { xs: '60px', sm: '80px' },
-          width: { xs: '90%', sm: 'auto' },
-          maxWidth: { xs: '300px', sm: '400px' }
-        }}
-        toastStyle={{ 
-          zIndex: 10000,
-          fontSize: { xs: '0.75rem', sm: '0.875rem' }
-        }}
-      />
+  position="top-right"
+  autoClose={3000}
+  style={{ 
+    top: { xs: '60px', sm: '80px' },
+    width: { xs: '90%', sm: 'auto' },
+    maxWidth: { xs: '300px', sm: '400px' },
+    zIndex: 1300, // Increased zIndex for mobile visibility
+  }}
+  toastStyle={{ 
+    fontSize: { xs: '0.75rem', sm: '0.875rem' },
+    zIndex: 1300, // Ensure toast content is above other elements
+  }}
+/>
     </Container>
   );
 };

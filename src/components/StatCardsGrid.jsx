@@ -123,9 +123,9 @@ const StatCardsGrid = () => {
       {/* Enhanced Header Section */}
       <Fade in timeout={600}>
         <Box sx={{ mb: { xs: 3, md: 4 } }}>
-          <Stack 
-            direction={{ xs: 'column', sm: 'row' }} 
-            spacing={2} 
+          <Stack
+            direction={{ xs: 'column', sm: 'row' }}
+            spacing={2}
             alignItems={{ xs: 'flex-start', sm: 'center' }}
             sx={{ mb: 2 }}
           >
@@ -157,14 +157,14 @@ const StatCardsGrid = () => {
                   Dashboard Overview
                 </Typography>
                 <Stack direction="row" spacing={1} alignItems="center">
-                  <InsightsIcon 
-                    sx={{ 
-                      color: 'text.secondary', 
-                      fontSize: { xs: 14, sm: 16, md: 18 } 
-                    }} 
+                  <InsightsIcon
+                    sx={{
+                      color: 'text.secondary',
+                      fontSize: { xs: 14, sm: 16, md: 18 }
+                    }}
                   />
-                  <Typography 
-                    variant="body1" 
+                  <Typography
+                    variant="body1"
                     color="text.secondary"
                     sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem', md: '1rem' } }}
                   >
@@ -186,8 +186,8 @@ const StatCardsGrid = () => {
                 elevation={0}
                 sx={{
                   height: '100%',
-                  minHeight: { xs: 160, sm: 180, md: 220 },
-                  width: '250px',
+                  minHeight: { xs: 180, sm: 180, md: 220 },
+                  width: { xs: '82vw', sm: '250px', md: '250px' },
                   borderRadius: { xs: 2, sm: 3, md: 4 },
                   background: 'rgba(255, 255, 255, 0.9)',
                   backdropFilter: 'blur(20px)',
@@ -226,20 +226,20 @@ const StatCardsGrid = () => {
                   }}
                 />
 
-                <CardContent 
-                  sx={{ 
-                    p: { xs: 1.5, sm: 2, md: 3 }, 
-                    flexGrow: 1, 
-                    display: 'flex', 
-                    flexDirection: 'column', 
-                    justifyContent: 'space-between' 
+                <CardContent
+                  sx={{
+                    p: { xs: 1.5, sm: 2, md: 3 },
+                    flexGrow: 1,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'space-between'
                   }}
                 >
                   {/* Header */}
-                  <Stack 
-                    direction="row" 
-                    justifyContent="space-between" 
-                    alignItems="flex-start" 
+                  <Stack
+                    direction="row"
+                    justifyContent="space-between"
+                    alignItems="flex-start"
                     sx={{ mb: { xs: 1.5, sm: 2 } }}
                   >
                     <Stack direction="row" spacing={{ xs: 1.5, sm: 2 }} alignItems="center" sx={{ flex: 1 }}>
@@ -255,7 +255,7 @@ const StatCardsGrid = () => {
                       >
                         <stat.icon sx={{ fontSize: { xs: 18, sm: 20, md: 24 } }} />
                       </Avatar>
-                      
+
                       <Box sx={{ flex: 1 }}>
                         <Typography
                           variant="subtitle2"
@@ -318,9 +318,9 @@ const StatCardsGrid = () => {
                   </Box>
 
                   {/* Footer */}
-                  <Stack 
-                    direction="row" 
-                    justifyContent="space-between" 
+                  <Stack
+                    direction="row"
+                    justifyContent="space-between"
                     alignItems="center"
                   >
                     <Typography
@@ -333,7 +333,7 @@ const StatCardsGrid = () => {
                     >
                       {stat.subtitle}
                     </Typography>
-                   
+
                     <Chip
                       icon={stat.trendUp ? <TrendingUpIcon /> : <TrendingDownIcon />}
                       label={stat.trend}

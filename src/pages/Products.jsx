@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react'; // Added useRef for focus management
 import { useLocation, useParams } from 'react-router-dom';
 import {
   Box, Container, Typography, Button, CardContent, Grid,
@@ -169,6 +169,7 @@ const Products = () => {
   const addToCart = useCartStore((state) => state.addToCart);
   const updateQuantity = useCartStore((state) => state.updateQuantity);
   const removeFromCart = useCartStore((state) => state.removeFromCart);
+  const containerRef = useRef(null); // Ref for focus management
 
   useEffect(() => {
     fetchProducts(categoryId);
@@ -200,46 +201,56 @@ const Products = () => {
   };
 
   const handleCartClick = async (product) => {
-  const currentQty = getQuantity(product.productId);
-  if (currentQty === 0) {
-    await addToCart(product);
-    toast.success(`"${product.productName}" added to cart!`, {
-      position: 'top-right',
-      autoClose: 3000,
-    });
-  } else {
-    await updateQuantity(product.productId, 1);
-    toast.success(`Increased quantity of "${product.productName}" in cart!`, {
-      position: 'top-right',
-      autoClose: 3000,
-    });
-  }
-};
-
-const updateProductQuantity = async (productId, delta) => {
-  const currentQty = getQuantity(productId);
-  const newQty = currentQty + delta;
-  const product = products.find((p) => p.productId === productId);
-  if (newQty <= 0) {
-    await removeFromCart(productId);
-  } else {
-    await updateQuantity(productId, delta);
-    if (delta > 0) {
+    const currentQty = getQuantity(product.productId);
+    if (currentQty === 0) {
+      await addToCart(product);
+      toast.success(`"${product.productName}" added to cart!`, {
+        position: 'top-right',
+        autoClose: 3000,
+      });
+    } else {
+      await updateQuantity(product.productId, 1);
       toast.success(`Increased quantity of "${product.productName}" in cart!`, {
         position: 'top-right',
         autoClose: 3000,
       });
     }
-  }
-};
+  };
+
+  const updateProductQuantity = async (productId, delta) => {
+    const currentQty = getQuantity(productId);
+    const newQty = currentQty + delta;
+    const product = products.find((p) => p.productId === productId);
+    if (newQty <= 0) {
+      await removeFromCart(productId);
+    } else {
+      await updateQuantity(productId, delta);
+      if (delta > 0) {
+        toast.success(`Increased quantity of "${product.productName}" in cart!`, {
+          position: 'top-right',
+          autoClose: 3000,
+        });
+      }
+    }
+  };
 
   const handleDelete = (id) => {
     setProductToDelete(id);
     setDeleteConfirmOpen(true);
-    
   };
 
   const confirmDelete = async () => {
+    console.log('Cart state before deletion:', cart); // Debug log
+    const productInCart = cart.find((item) => item.productId === productToDelete);
+    if (productInCart) {
+      setDeleteConfirmOpen(false);
+      toast.error('This product cannot be deleted as added in cart.', {
+        position: 'top-right',
+        autoClose: 3000,
+      });
+      return;
+    }
+
     try {
       await deleteProduct(productToDelete);
       setDeleteConfirmOpen(false);
@@ -250,7 +261,13 @@ const updateProductQuantity = async (productId, delta) => {
       });
     } catch (err) {
       setDeleteConfirmOpen(false);
-      toast.error('Failed to delete product. Please try again.', {
+      let errorMessage = 'Failed to delete product. Please try again.';
+      if (err.response?.status === 500) {
+        errorMessage = 'Server error occurred while deleting the product. Please try again later.';
+      } else if (err.response?.data?.message) {
+        errorMessage = err.response.data.message;
+      }
+      toast.error(errorMessage, {
         position: 'top-right',
         autoClose: 3000,
       });
@@ -265,13 +282,11 @@ const updateProductQuantity = async (productId, delta) => {
       setProductName(product.productName);
       setDescription(product.description);
       setPrice(product.price);
-      // Only set selectedCategory if we're on the all products page
       if (isAllProductsPage) {
         setSelectedCategory(product.categoryId);
       }
       setImage(null);
       setShowModal(true);
-      
     } catch (err) {
       toast.error('Failed to fetch product details. Please try again.', {
         position: 'top-right',
@@ -281,7 +296,6 @@ const updateProductQuantity = async (productId, delta) => {
   };
 
   const handleSave = async () => {
-    // Validation - category is only required for all products page
     const requiredFields = [productName.trim(), description.trim(), price];
     if (isAllProductsPage) {
       requiredFields.push(selectedCategory);
@@ -301,7 +315,6 @@ const updateProductQuantity = async (productId, delta) => {
         productName,
         description,
         price: parseFloat(price),
-        // Use current categoryId if not on all products page, otherwise use selected category
         categoryId: isAllProductsPage ? parseInt(selectedCategory) : parseInt(categoryId),
         image,
         isEditing,
@@ -341,6 +354,15 @@ const updateProductQuantity = async (productId, delta) => {
     setUploading(false);
   };
 
+  const handleDeleteDialogClose = () => {
+    setDeleteConfirmOpen(false);
+    setProductToDelete(null);
+    // Move focus to the container after dialog closes
+    if (containerRef.current) {
+      containerRef.current.focus();
+    }
+  };
+
   const handleImageSelect = (event) => {
     const file = event.target.files[0];
     if (file) {
@@ -359,7 +381,7 @@ const updateProductQuantity = async (productId, delta) => {
   };
 
   return (
-    <PageContainer maxWidth="xl">
+    <PageContainer maxWidth="xl" ref={containerRef} tabIndex={-1}>
       <HeaderContainer>
         <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 2 }}>
           <Box>
@@ -386,6 +408,8 @@ const updateProductQuantity = async (productId, delta) => {
             variant="outlined"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
+            sx={{ width: { xs: '85vw', sm: '300px', md: '400px' }
+            , flexShrink: 0 }}
             InputProps={{
               startAdornment: (
                 <InputAdornment position="start">
@@ -444,7 +468,6 @@ const updateProductQuantity = async (productId, delta) => {
               ? 'Try a different search term'
               : 'Start adding products to see them here.'}
           </Typography>
-          
         </EmptyStateContainer>
       )}
 
@@ -641,7 +664,6 @@ const updateProductQuantity = async (productId, delta) => {
               }
             }}
           />
-          {/* Only show category selection on all products page */}
           {isAllProductsPage && (
             <Select
               fullWidth
@@ -664,7 +686,6 @@ const updateProductQuantity = async (productId, delta) => {
               ))}
             </Select>
           )}
-          {/* Show current category info when on category page */}
           {!isAllProductsPage && (
             <Box sx={{ mb: 3, p: 2, bgcolor: 'grey.50', borderRadius: '8px' }}>
               <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
@@ -741,9 +762,10 @@ const updateProductQuantity = async (productId, delta) => {
 
       <StyledDialog
         open={deleteConfirmOpen}
-        onClose={() => setDeleteConfirmOpen(false)}
+        onClose={handleDeleteDialogClose}
         maxWidth="xs"
         fullWidth
+        disableRestoreFocus // Prevent automatic focus restoration
       >
         <DialogTitle sx={{ pb: 1 }}>
           <Stack direction="row" alignItems="center" justifyContent="space-between">
@@ -751,7 +773,7 @@ const updateProductQuantity = async (productId, delta) => {
               Confirm Deletion
             </Typography>
             <IconButton
-              onClick={() => setDeleteConfirmOpen(false)}
+              onClick={handleDeleteDialogClose}
               size="small"
               sx={{ color: 'grey.500' }}
             >
@@ -766,7 +788,7 @@ const updateProductQuantity = async (productId, delta) => {
         </DialogContent>
         <DialogActions sx={{ p: 3, pt: 2, gap: 1 }}>
           <Button
-            onClick={() => setDeleteConfirmOpen(false)}
+            onClick={handleDeleteDialogClose}
             variant="outlined"
             sx={{
               textTransform: 'none',
